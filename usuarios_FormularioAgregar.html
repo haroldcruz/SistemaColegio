@@ -1,0 +1,33 @@
+<div class="formulario-usuario-agregar">
+  <!-- 🧾 Título principal del formulario -->
+  <h2>➕ Nuevo Usuario</h2>
+
+  <!-- 🔹 Campo para ingresar el correo electrónico del nuevo usuario -->
+  <div class="campo-form">
+    <label for="emailUsuario"><strong>Email</strong></label>
+    <input type="email" id="emailUsuario" required />
+  </div>
+
+  <!-- 🔹 Campo para ingresar el nombre del nuevo usuario -->
+  <div class="campo-form">
+    <label for="nombreUsuario"><strong>Nombre</strong></label>
+    <input type="text" id="nombreUsuario" required />
+  </div>
+
+  <!-- 🔹 Selector de rol del usuario (Administrador, Profesor, Encargado) -->
+  <div class="campo-form">
+    <label for="rolUsuario"><strong>Rol</strong></label>
+    <select id="rolUsuario" onchange="onRolUsuarioChange(this.value)" required>
+      <option value="" disabled selected>Seleccione un rol</option>
+      <option value="Administrador">Administrador</option>
+      <option value="Profesor">Profesor</option>
+      <option value="Encargado">Encargado</option>
+    </select>
+  </div>
+
+  <!-- 🧭 Botones de acción del formulario -->
+  <div class="acciones-formulario">
+    <button onclick="abrirModulo('usuarios_UsuariosView')" class="btn-secundario">Cancelar</button>
+    <button onclick="guardarUsuario()" class="btn-primario">Guardar Usuario</button>
+  </div>
+</div>

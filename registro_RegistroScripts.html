@@ -1,0 +1,115 @@
+<script>
+/**
+ * Inicializa la vista del módulo de registro, agregando los manejadores de eventos.
+ */
+/**
+ * Inicializa la vista del módulo de registro, agregando los manejadores de eventos.
+ */
+function inicializarVistaRegistro() {
+  console.log("Inicializando la vista de registro...");
+
+  const tabButtons = document.querySelectorAll('.tab-button');
+  const tabContents = document.querySelectorAll('.tab-content');
+  const importButton = document.getElementById('importButton');
+
+  // 🔹 PRUEBA CLAVE: MIRA LA CONSOLA PARA VER CUÁNTOS BOTONES SE ENCUENTRAN
+  console.log("Botones de pestaña encontrados:", tabButtons.length);
+
+  // Asigna eventos para cambiar de pestaña
+  tabButtons.forEach(button => {
+    button.addEventListener('click', () => {
+      console.log(`Pestaña clicada: ${button.id}`);
+      // 1. Oculta todos los contenidos y desactiva los botones
+      tabContents.forEach(content => content.style.display = 'none');
+      tabButtons.forEach(btn => btn.classList.remove('active'));
+
+      // 2. Muestra el contenido de la pestaña clicada
+      const contentId = button.id.replace('tab', '') + 'Content';
+      document.getElementById(contentId).style.display = 'block';
+      button.classList.add('active');
+    });
+  });
+
+  // Asigna el evento para el botón de importar
+  if (importButton) {
+    importButton.addEventListener('click', handleImport);
+  }
+
+  // Oculta el spinner de carga inicial
+  ocultarModalCarga();
+  console.log("Vista de registro inicializada.");
+}
+
+/**
+ * Maneja el proceso de importación de estudiantes desde Google Sheets.
+ */
+function handleImport() {
+  // ... (Esta función no necesita cambios, tu lógica es correcta)
+  const fileId = document.getElementById('fileIdInput').value;
+  const statusMessage = document.getElementById('statusMessage');
+  const loadingSpinner = document.getElementById('loadingSpinner');
+
+  if (!fileId) {
+    statusMessage.textContent = 'Por favor, ingrese un ID de archivo válido.';
+    statusMessage.style.color = 'red';
+    return;
+  }
+
+  loadingSpinner.style.display = 'block';
+  statusMessage.textContent = '';
+
+  google.script.run
+    .withSuccessHandler(function(respuesta) {
+      loadingSpinner.style.display = 'none';
+      if (respuesta.success) {
+        statusMessage.textContent = respuesta.message;
+        statusMessage.style.color = 'green';
+      } else {
+        statusMessage.textContent = `Error: ${respuesta.message}`;
+        statusMessage.style.color = 'red';
+      }
+    })
+    .withFailureHandler(function(error) {
+      loadingSpinner.style.display = 'none';
+      statusMessage.textContent = `Error del servidor: ${error.message}`;
+      statusMessage.style.color = 'red';
+    })
+    .importarEstudiantesDesdeSheet(fileId);
+}
+
+/**
+ * Maneja el proceso de importación de estudiantes desde Google Sheets.
+ */
+function handleImport() {
+  const fileId = document.getElementById('fileIdInput').value;
+  const statusMessage = document.getElementById('statusMessage');
+  const loadingSpinner = document.getElementById('loadingSpinner');
+
+  if (!fileId) {
+    statusMessage.textContent = 'Por favor, ingrese un ID de archivo válido.';
+    statusMessage.style.color = 'red';
+    return;
+  }
+
+  loadingSpinner.style.display = 'block';
+  statusMessage.textContent = '';
+
+  google.script.run
+    .withSuccessHandler(function(respuesta) {
+      loadingSpinner.style.display = 'none';
+      if (respuesta.success) {
+        statusMessage.textContent = respuesta.message;
+        statusMessage.style.color = 'green';
+      } else {
+        statusMessage.textContent = `Error: ${respuesta.message}`;
+        statusMessage.style.color = 'red';
+      }
+    })
+    .withFailureHandler(function(error) {
+      loadingSpinner.style.display = 'none';
+      statusMessage.textContent = `Error del servidor: ${error.message}`;
+      statusMessage.style.color = 'red';
+    })
+    .importarEstudiantesDesdeSheet(fileId);
+}
+</script>

@@ -1,0 +1,97 @@
+<!--
+@file UsuariosHTML.html
+@description Interfaz del módulo de Gestión de Usuarios.
+-->
+
+<div class="modulo-usuarios">
+  <h3>Gestión de Usuarios</h3>
+
+<!-- 🔹 Navegación entre pestañas -->
+<div class="usuarios-tabs">
+  <button class="btn-tab" onclick="abrirModulo('usuarios_FormularioAgregar')" id="tabAddUsuario">
+  ➕ Añadir Usuario
+</button>
+
+</div>
+
+<!-- 🔹 Sección: Lista de usuarios -->
+<section id="usuarios-lista">
+  <h4 class="seccion-titulo">Lista de Usuarios Registrados</h4>
+
+  <!-- 🔹 Buscador -->
+  <div class="usuarios-buscador">
+    <input
+      type="text"
+      id="buscadorUsuarios"
+      placeholder="Buscar por nombre, email o rol..."
+      class="input-buscador"
+    />
+  </div>
+</section>
+    <!-- 🔹 Mensaje de estado -->
+    <div id="userStatusMessage" class="status-message"></div>
+
+    <!-- 🔹 Tabla de usuarios -->
+    <table class="user-table tabla-usuarios">
+      <thead>
+        <tr>
+          <th>Email</th>
+          <th>Nombre</th>
+          <th>Rol</th>
+          <th>Accesos</th>
+          <th>Acciones</th>
+        </tr>
+      </thead>
+      <tbody id="userListBody">
+        <tr><td colspan="5">Selecciona la pestaña "Ver Usuarios" para cargar los datos.</td></tr>
+      </tbody>
+    </table>
+
+    <!-- 🔹 Paginador -->
+    <div class="paginador">
+      <button id="prevPagina">Anterior</button>
+      <span id="infoPagina">Página 1 de 1</span>
+      <button id="nextPagina">Siguiente</button>
+    </div>
+  </div>
+<div id="modalEdicionUsuario" class="modal">
+    <div class="modal-contenido">
+        <span class="cerrar-modal" onclick="document.getElementById('modalEdicionUsuario').style.display='none';">&times;</span>
+        <h2 class="modal-titulo">Editar Usuario</h2>
+
+        <div class="formulario-edicion-usuario">
+            <input type="hidden" id="modalOriginalEmail">
+
+            <div class="campo-form">
+                <label for="modalEmail"><strong>Email</strong></label>
+                <input type="email" id="modalEmail" readonly />
+            </div>
+
+            <div class="campo-form">
+                <label for="modalNombre"><strong>Nombre</strong></label>
+                <input type="text" id="modalNombre" required />
+            </div>
+
+            <div class="campo-form">
+                <label for="modalRol"><strong>Rol</strong></label>
+                <select id="modalRol">
+                    <option value="Administrador">Administrador</option>
+                    <option value="Docente">Docente</option>
+                    <option value="Secretaría">Secretaría</option>
+                </select>
+            </div>
+
+            <div class="campo-form accesos-container">
+                <label><strong>Accesos</strong></label>
+                <div id="modalAccesosTags" class="accesos-tags"></div>
+            </div>
+
+            <div class="acciones-formulario">
+                <button class="btn-secundario" onclick="document.getElementById('modalEdicionUsuario').style.display='none';">Cancelar</button>
+                <button class="btn-primario" onclick="actualizarUsuario()">Actualizar Usuario</button>
+            </div>
+        </div>
+    </div>
+</div>
+  
+
