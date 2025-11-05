@@ -1,0 +1,517 @@
+<style>
+/* Tabla de estudiantes */
+.students-table {
+    width: 100%;
+    border-collapse: collapse;
+    background: var(--dark-blue);
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 2px 8px rgba(22, 40, 64, 0.14);
+}
+
+.students-table th, .students-table td {
+    padding: 0.75rem 1rem;
+    text-align: left;
+}
+
+.students-table th {
+    background: var(--light-dark-blue);
+    color: var(--accent-gold);
+    letter-spacing: 0.05em;
+    font-size: 1rem;
+}
+
+.students-table tbody tr {
+    border-bottom: 1px solid #20416a;
+    transition: background 0.2s;
+}
+
+.students-table tbody tr:hover {
+    background: #1f3e72cc;
+}
+
+.students-table td {
+    color: var(--white-text);
+    font-size: 0.95rem;
+}
+
+/* Mensaje sin datos */
+.no-data {
+    text-align: center;
+    color: var(--accent-gold);
+    background: var(--dark-blue);
+    padding: 2rem;
+    border-radius: 8px;
+    font-size: 1.1rem;
+}
+
+/* Botones de acción */
+.students-table button {
+    background: var(--accent-gold);
+    color: var(--dark-blue);
+    border: none;
+    border-radius: 6px;
+    padding: 0.4rem 0.9rem;
+    margin-right: 0.3em;
+    font-weight: bold;
+    cursor: pointer;
+    transition: background 0.2s, color 0.2s;
+}
+
+.students-table button:hover {
+    background: var(--white-text);
+    color: var(--accent-gold);
+    box-shadow: 0 0 8px var(--accent-gold);
+}
+.students-filters {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 15px;
+}
+.student-search, .section-filter {
+  padding: 5px 10px;
+  border-radius: 4px;
+  border: 1px solid #aaa;
+}
+.importacion-estudiantes {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 15px;
+}
+.importacion-estudiantes label {
+  font-weight: 500;
+}
+.import-students-file {
+  padding: 4px;
+}
+.import-students-btn {
+  padding: 5px 14px;
+  border-radius: 4px;
+  border: 1px solid #1976d2;
+  background: #2196f3;
+  color: #fff;
+  cursor: pointer;
+}
+.import-students-btn:hover {
+  background: #1769aa;
+}
+/* Estilo minimalista para tarjetas y tabla */
+/* Agrupa las tarjetas en filas de dos */
+.student-cards-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 20px;
+  justify-content: center;
+  margin-bottom: 18px;
+}
+
+/* Tarjeta base */
+.student-card-datos,
+.student-card-materias,
+.student-card-asistencia,
+.student-card-conducta,
+.student-card-comportamiento {
+  background: #162840;
+  border: 2px solid #D4AF37; /* borde dorado */
+  border-radius: 10px;
+  color: #f0f0f0;
+  padding: 18px 14px;
+  width: 46%;
+  min-width: 240px;
+  margin-bottom: 0;
+  box-sizing: border-box;
+  /* Alineación interna */
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+/* Encabezados dentro de la tarjeta */
+.student-card-datos-header,
+.student-card-materias-header,
+.student-card-asistencia-header,
+.student-card-conducta-header,
+.student-card-comportamiento-header {
+  color: #D4AF37;
+  font-weight: bold;
+  margin-bottom: 8px;
+  font-size: 1.1em;
+}
+
+/* Tablas de materias */
+.student-card-materias-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 10px;
+}
+.student-card-materias-table th,
+.student-card-materias-table td {
+  border-bottom: 1px solid #D4AF37;
+  padding: 6px 4px;
+  text-align: left;
+}
+.student-card-materias-table th {
+  color: #D4AF37;
+  background: #1f3e72;
+  font-weight: 500;
+}
+
+/* Botón cerrar */
+.student-card-cerrar {
+  text-align: center;
+  margin-top: 18px;
+}
+.student-card-cerrar button {
+  background: #D4AF37;
+  color: #162840;
+  border: none;
+  border-radius: 5px;
+  padding: 6px 18px;
+  font-weight: bold;
+  cursor: pointer;
+}
+
+/* Siempre dos por fila, incluso en móvil */
+@media (max-width: 700px) {
+  .student-card-datos,
+  .student-card-materias,
+  .student-card-asistencia,
+  .student-card-conducta,
+  .student-card-comportamiento {
+    width: 46%;
+    min-width: 120px;
+    font-size: 0.97em;
+    padding: 10px 6px;
+  }
+  .student-cards-grid {
+    gap: 10px;
+  }
+}
+/* Efecto al mostrar/ocultar paneles */
+.fade-out-panel {
+  opacity: 0;
+  max-height: 0;
+  transition: opacity 0.3s, max-height 0.3s;
+  overflow: hidden;
+}
+.fade-in-panel {
+  opacity: 1;
+  max-height: 1000px;
+  transition: opacity 0.3s, max-height 0.3s;
+}
+
+/* Grid apilado de dos en dos */
+.student-cards-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  align-items: center;
+}
+.student-cards-row {
+  display: flex;
+  gap: 18px;
+  width: 100%;
+  justify-content: center;
+}
+
+/* Tarjetas base */
+.student-card-datos,
+.student-card-materias,
+.student-card-asistencia,
+.student-card-conducta,
+.student-card-comportamiento {
+  background: #162840;
+  border: 2px solid #D4AF37;
+  border-radius: 10px;
+  color: #f0f0f0;
+  padding: 16px 12px;
+  flex: 1 1 0;
+  min-width: 220px;
+  box-sizing: border-box;
+}
+
+/* Botón cerrar */
+.student-card-cerrar {
+  text-align: center;
+  margin-top: 18px;
+}
+.student-card-cerrar button {
+  background: #D4AF37;
+  color: #162840;
+  border: none;
+  border-radius: 5px;
+  padding: 6px 18px;
+  font-weight: bold;
+  cursor: pointer;
+}
+/* Contenedor de filas de dos tarjetas */
+.student-cards-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  align-items: center;
+}
+
+/* Cada fila contiene dos tarjetas */
+.student-cards-row {
+  display: flex;
+  gap: 18px;
+  width: 100%;
+  justify-content: center;
+}
+
+/* Tarjetas individuales */
+.student-card-datos,
+.student-card-materias,
+.student-card-asistencia,
+.student-card-conducta,
+.student-card-comportamiento {
+  background: #162840;
+  border: 2px solid #D4AF37;
+  border-radius: 10px;
+  color: #f0f0f0;
+  padding: 16px 12px;
+  flex: 1 1 0;
+  min-width: 220px;
+  box-sizing: border-box;
+}
+:root {
+  --dark-blue: #162840;
+  --light-dark-blue: #1f3e72;
+  --accent-gold: #D4AF37;
+  --white-text: #f0f0f0;
+  --light-gray-bg: #2d4c6d;
+}
+
+#student-edit-section {
+  background-color: var(--light-gray-bg);
+  padding: 20px;
+  border-radius: 8px;
+  box-shadow: 0 0 10px rgba(0,0,0,0.3);
+  max-width: 500px;
+  margin: 20px auto;
+  color: var(--white-text);
+  font-family: 'Segoe UI', sans-serif;
+}
+
+#student-edit-section h3 {
+  color: var(--accent-gold);
+  text-align: center;
+  margin-bottom: 20px;
+}
+
+#edit-student-form label {
+  display: block;
+  margin-bottom: 12px;
+  color: var(--white-text);
+  font-weight: 500;
+}
+
+#edit-student-form input,
+#edit-student-form select {
+  width: 100%;
+  padding: 8px;
+  margin-top: 4px;
+  border: none;
+  border-radius: 4px;
+  background-color: var(--light-dark-blue);
+  color: var(--white-text);
+}
+
+#edit-student-form input[type="date"] {
+  color-scheme: dark;
+}
+
+#edit-student-form button {
+  background-color: var(--accent-gold);
+  color: var(--dark-blue);
+  border: none;
+  padding: 10px 15px;
+  margin-top: 15px;
+  margin-right: 10px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: bold;
+  transition: background-color 0.3s ease;
+}
+
+#edit-student-form button:hover {
+  background-color: #c49c2f;
+}
+.add-student-btn {
+  background-color: #2196f3;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  padding: 8px 14px;
+  font-size: 14px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  margin-left: 10px;
+}
+
+.add-student-btn:hover {
+  background-color: #1976d2;
+}
+
+.add-student-btn i {
+  margin-right: 5px;
+}
+/* =========================================================
+   FORMULARIO DE NUEVO ESTUDIANTE
+   Usa la paleta institucional definida en :root
+   ========================================================= */
+
+.student-form-container {
+  background: var(--light-gray-bg); /* Fondo suave */
+  color: var(--white-text);
+  padding: 24px;
+  border-radius: 10px;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.25);
+  max-width: 650px;
+  margin: 25px auto;
+}
+
+.student-form-container h3 {
+  text-align: center;
+  color: var(--accent-gold); /* Título en dorado */
+  margin-bottom: 20px;
+  letter-spacing: 0.5px;
+}
+
+/* Estructura de campos */
+.form-row {
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 14px;
+}
+
+.form-row label {
+  font-weight: 600;
+  color: var(--accent-gold);
+  margin-bottom: 5px;
+}
+
+.form-row input,
+.form-row select {
+  padding: 8px 10px;
+  border: 1px solid var(--accent-gold);
+  border-radius: 6px;
+  background-color: var(--white-text);
+  color: var(--dark-blue);
+  font-size: 14px;
+  outline: none;
+  transition: border-color 0.2s ease-in-out;
+}
+
+.form-row input:focus,
+.form-row select:focus {
+  border-color: var(--light-dark-blue);
+}
+
+/* Botones principales */
+.form-buttons {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 24px;
+}
+
+.guardar-btn,
+.cancelar-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 18px;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 15px;
+  transition: all 0.2s ease-in-out;
+}
+
+/* Botón guardar en azul oscuro */
+.guardar-btn {
+  background-color: var(--light-dark-blue);
+  color: var(--white-text);
+}
+.guardar-btn:hover {
+  background-color: var(--dark-blue);
+}
+
+/* Botón cancelar en dorado */
+.cancelar-btn {
+  background-color: var(--accent-gold);
+  color: var(--dark-blue);
+}
+.cancelar-btn:hover {
+  filter: brightness(0.9);
+}
+/* ============================================================
+   ESTILO DEL BLOQUE DE ELIMINAR ESTUDIANTE
+   ============================================================ */
+.student-delete-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 60vh;
+    background-color: var(--light-dark-blue);
+}
+
+.delete-card {
+    background-color: var(--light-dark-blue);
+    border: 1px solid var(--accent-gold);
+    border-radius: 10px;
+    padding: 20px 25px;
+    width: 400px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.25);
+    color: var(--white-text);
+}
+
+.delete-card h3 {
+    color: var(--accent-gold);
+    margin-bottom: 10px;
+    text-align: center;
+}
+
+.delete-info p {
+    margin: 4px 0;
+    color: var(--white-text);
+}
+
+.delete-buttons {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 18px;
+}
+
+/* Botón de confirmación */
+#confirmar-eliminar-btn {
+    background-color: var(--accent-gold);
+    color: var(--dark-blue);
+    border: none;
+    padding: 6px 12px;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+#confirmar-eliminar-btn:hover {
+    background-color: #e0c156;
+}
+
+/* Botón de cancelar */
+#cancelar-eliminar-btn {
+    background-color: var(--dark-blue);
+    color: var(--white-text);
+    border: 1px solid var(--accent-gold);
+    padding: 6px 12px;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+#cancelar-eliminar-btn:hover {
+    background-color: #284a73;
+}
+
+</style>

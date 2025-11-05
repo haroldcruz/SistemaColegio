@@ -1,0 +1,103 @@
+<script>
+// -------------------------------------------------------------
+// LOGIC STUDENTS
+// Funciones de manejo de estudiantes, renderizado y botones
+// -------------------------------------------------------------
+
+// Variable global del rol (llenada al inicializar)
+let usuarioLogueadoRole = '';
+
+// Función inicial que carga el módulo de estudiantes
+function loadStudentsModule() {
+    const moduleContent = document.getElementById('module-content');
+    moduleContent.innerHTML = `<p>Cargando estudiantes...</p>`;
+
+    // Llamada al backend para obtener los estudiantes según rol
+    google.script.run
+        .withSuccessHandler(renderStudentsTable)
+        .withFailureHandler(error => {
+            moduleContent.innerHTML = `<p style="color:red;">Error al cargar estudiantes: ${error.message}</p>`;
+        })
+        .getStudentsByFilter(); // usa usuarioLogueado global
+}
+
+// Función que recibe la lista de estudiantes y genera la tabla
+function renderStudentsTable(students) {
+    const moduleContent = document.getElementById('module-content');
+
+    if (!students || students.length === 0) {
+        moduleContent.innerHTML = `<p>No hay estudiantes disponibles para este usuario.</p>`;
+        return;
+    }
+
+    let html = `
+        <h2>Listado de Estudiantes</h2>
+        <table class="students-table">
+            <thead>
+                <tr>
+                    <th>Cédula</th>
+                    <th>Nombre Completo</th>
+                    <th>Sección</th>
+                    <th>Sexo</th>
+                    <th>Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+    `;
+
+    students.forEach(s => {
+        const fullName = `${s.Nombre} ${s['Primer apellido']} ${s['Segundo apellido']}`;
+
+        // Definir botones según rol
+        let actionButtons = `<button class="btn btn-view" title="Ver detalles del estudiante"><i class="material-icons">visibility</i></button>`;
+
+        if (usuarioLogueadoRole === 'administrador') {
+            actionButtons += `
+                <button class="btn btn-edit" title="Editar estudiante"><i class="material-icons">edit</i></button>
+                <button class="btn btn-delete" title="Eliminar estudiante"><i class="material-icons">delete</i></button>
+                <button class="btn btn-assign" title="Asignar Sección"><i class="material-icons">group_add</i></button>
+                <button class="btn btn-conduct" title="Reportes de Conducta"><i class="material-icons">report</i></button>
+                <button class="btn btn-attendance" title="Asistencia"><i class="material-icons">check_circle</i></button>
+            `;
+        } else if (usuarioLogueadoRole === 'docente' || usuarioLogueadoRole === 'profesor') {
+            actionButtons += `
+                <button class="btn btn-grade" title="Calificar estudiante"><i class="material-icons">school</i></button>
+                <button class="btn btn-conduct" title="Reportes de Conducta"><i class="material-icons">report</i></button>
+            `;
+        } else if (usuarioLogueadoRole === 'encargado' || usuarioLogueadoRole === 'padre') {
+            actionButtons += `
+                <button class="btn btn-notes" title="Notas Parciales"><i class="material-icons">assignment</i></button>
+                <button class="btn btn-communications" title="Comunicados"><i class="material-icons">email</i></button>
+                <button class="btn btn-conduct" title="Nota de Conducta"><i class="material-icons">report</i></button>
+            `;
+        }
+
+        html += `
+            <tr>
+                <td>${s.Cédula}</td>
+                <td>${fullName}</td>
+                <td>${s.Sección}</td>
+                <td>${s.Sexo}</td>
+                <td class="actions-cell">${actionButtons}</td>
+            </tr>
+        `;
+    });
+
+    html += `</tbody></table>`;
+    moduleContent.innerHTML = html;
+}
+
+// Función para inicializar módulo de estudiantes desde main
+function initStudentsModule() {
+    // Obtener rol global del usuario
+    google.script.run
+        .withSuccessHandler(role => {
+            usuarioLogueadoRole = (role || '').toLowerCase().trim();
+            loadStudentsModule();
+        })
+        .withFailureHandler(error => {
+            document.getElementById('module-content').innerHTML = `<p style="color:red;">No se pudo obtener el rol del usuario.</p>`;
+        })
+        .getUserRole(); // backend devuelve objeto {name, role, email, encargadoId}
+}
+</script>

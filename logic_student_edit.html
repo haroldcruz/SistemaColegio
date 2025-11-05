@@ -1,0 +1,188 @@
+<script>
+// =============================================================
+// CARGA Y EDICIÓN DE ESTUDIANTES CON DATOS PRECARGADOS
+// =============================================================
+
+// 🔹 Inicia la edición: obtiene datos desde el backend
+function editarEstudiante(cedula) {
+  showLoader();
+  google.script.run
+    .withSuccessHandler(function(resp) {
+      hideLoader();
+      mostrarFormularioEdicion(resp.datosArr[0].datos);
+    })
+    .withFailureHandler(function() {
+      hideLoader();
+      alert('Error al cargar datos');
+    })
+    .getStudentEditData(cedula);
+}
+
+// 🔹 Muestra el formulario de edición con listas dinámicas
+function mostrarFormularioEdicion(estudiante) {
+  document.getElementById('module-content').style.display = 'none';
+  let oldEditSection = document.getElementById('student-edit-section');
+  if (oldEditSection) oldEditSection.remove();
+
+  if (!estudiante || Object.keys(estudiante).length === 0) {
+    alert("No hay datos disponibles");
+    regresarVista();
+    return;
+  }
+
+  // --- Formulario base ---
+  const formHtml = `
+    <div id="student-edit-section" style="margin:20px 0;">
+      <h3>Editar estudiante</h3>
+      <form id="edit-student-form">
+        <div class="form-row">
+          <label>Cédula:</label>
+          <input name="cedula" type="text" value="${estudiante.Cédula || ''}" readonly>
+        </div>
+        <div class="form-row">
+          <label>Primer apellido:</label>
+          <input name="primer_apellido" type="text" value="${estudiante["Primer apellido"] || ''}">
+        </div>
+        <div class="form-row">
+          <label>Segundo apellido:</label>
+          <input name="segundo_apellido" type="text" value="${estudiante["Segundo apellido"] || ''}">
+        </div>
+        <div class="form-row">
+          <label>Nombre:</label>
+          <input name="nombre" type="text" value="${estudiante.Nombre || ''}">
+        </div>
+        <div class="form-row">
+          <label>Sección:</label>
+          <select id="seccion-edit" name="seccion" required>
+            <option value="">Cargando secciones...</option>
+          </select>
+        </div>
+        <div class="form-row">
+          <label>Nacionalidad:</label>
+          <input name="nacionalidad" type="text" value="${estudiante.Nacionalidad || ''}">
+        </div>
+        <div class="form-row">
+          <label>Sexo:</label>
+          <select name="sexo">
+            <option value="F" ${estudiante.Sexo == 'F' ? 'selected' : ''}>Femenino</option>
+            <option value="M" ${estudiante.Sexo == 'M' ? 'selected' : ''}>Masculino</option>
+          </select>
+        </div>
+        <div class="form-row">
+          <label>Fecha de nacimiento:</label>
+          <input name="nacimiento" type="date" value="${estudiante["Fecha de nacimiento"] || ''}">
+        </div>
+        <div class="form-row">
+          <label>Teléfono:</label>
+          <input name="telefono" type="text" value="${estudiante.Teléfono || ''}">
+        </div>
+        <div class="form-row">
+          <label>Encargado ID:</label>
+          <select id="encargado-edit" name="encargado_id" required>
+            <option value="">Cargando encargados...</option>
+          </select>
+        </div>
+        <div class="form-buttons">
+          <button type="button" id="guardar-cambios-btn">Guardar cambios</button>
+          <button type="button" id="regresar-btn">Regresar</button>
+        </div>
+      </form>
+    </div>
+  `;
+  document.getElementById('module-content').insertAdjacentHTML('afterend', formHtml);
+
+  // --- Cargar opciones dinámicas ---
+  showLoader();
+
+  google.script.run
+    .withSuccessHandler(function(listaSecciones) {
+      const selectSeccion = document.getElementById('seccion-edit');
+      selectSeccion.innerHTML =
+        '<option value="">Seleccione una sección</option>' +
+        listaSecciones.map(s => `
+          <option value="${s.id_seccion}" ${String(estudiante.Sección) === String(s.id_seccion) ? 'selected' : ''}>
+            ${s.Nivel} ${s.Grupo} ${s.Subgrupo}
+          </option>
+        `).join('');
+      hideLoader();
+    })
+    .withFailureHandler(() => {
+      hideLoader();
+      alert('Error al cargar secciones');
+    })
+    .getSeccionesData();
+
+  showLoader();
+  google.script.run
+    .withSuccessHandler(function(listaEncargados) {
+      const selectEnc = document.getElementById('encargado-edit');
+      selectEnc.innerHTML =
+        '<option value="">Seleccione un encargado</option>' +
+        listaEncargados.map(e => `
+          <option value="${e.id}" ${String(estudiante["Encargado ID"]) === String(e.id) ? 'selected' : ''}>
+            ${e.nombre}
+          </option>
+        `).join('');
+      hideLoader();
+    })
+    .withFailureHandler(() => {
+      hideLoader();
+      alert('Error al cargar encargados');
+    })
+    .getEncargadosData();
+
+  // Eventos
+  document.getElementById('guardar-cambios-btn').onclick = guardarCambiosEstudiante;
+  document.getElementById('regresar-btn').onclick = regresarVista;
+}
+
+// 🔹 Envía cambios al backend
+function guardarCambiosEstudiante() {
+  showLoader();
+  const form = document.getElementById('edit-student-form');
+
+  const data = {
+    cedula: form.cedula.value.trim(),
+    nombre: form.nombre.value.trim(),
+    primer_apellido: form.primer_apellido.value.trim(),
+    segundo_apellido: form.segundo_apellido.value.trim(),
+    seccion: form.seccion.value.trim(),
+    nacionalidad: form.nacionalidad.value.trim(),
+    sexo: form.sexo.value.trim(),
+    nacimiento: form.nacimiento.value.trim(),
+    telefono: form.telefono.value.trim(),
+    encargado_id: form.encargado_id.value.trim()
+  };
+
+  google.script.run
+    .withSuccessHandler(function(resp) {
+      hideLoader();
+      if (resp && resp.success) {
+        alert('Guardado exitoso');
+        regresarVista();
+      } else {
+        alert(resp && resp.error ? resp.error : 'Error al guardar');
+      }
+    })
+    .withFailureHandler(function() {
+      hideLoader();
+      alert('Error de comunicación con el backend');
+    })
+    .guardarDatosEstudiante(data);
+}
+
+// 🔹 Regresa a la vista principal
+function regresarVista() {
+  document.getElementById('module-content').style.display = '';
+  let editSection = document.getElementById('student-edit-section');
+  if (editSection) editSection.remove();
+}
+
+// 🔹 Evento editar
+document.addEventListener('click', function(e) {
+  if (e.target && e.target.classList.contains('editar-btn')) {
+    const cedula = e.target.getAttribute('data-id');
+    editarEstudiante(cedula);
+  }
+});
+</script>

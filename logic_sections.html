@@ -1,0 +1,187 @@
+<script>
+// =============================================================
+// MÓDULO CRUD DE SECCIONES
+// =============================================================
+
+// 🔹 Cargar y mostrar todas las secciones
+function showSeccionesModule() {
+  showLoader();
+  document.querySelector('.dashboard-container').style.display = 'none'; // 🔹 oculta dashboard
+  google.script.run
+    .withSuccessHandler(function(secciones) {
+      hideLoader();
+      renderSeccionesTable(secciones);
+    })
+    .withFailureHandler(function() {
+      hideLoader();
+      alert("Error al cargar secciones");
+    })
+    .getSeccionesData();
+}
+
+// 🔹 Renderiza la tabla principal
+function renderSeccionesTable(secciones) {
+  const module = document.getElementById('module-content');
+  module.innerHTML = `
+    <div id="secciones-module">
+      <h3>Gestión de Secciones</h3>
+      <button id="add-seccion-btn" class="btn btn-success btn-sm">Agregar sección</button>
+      <div class="table-responsive">
+        <table class="table secciones-table">
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Nivel</th>
+              <th>Grupo</th>
+              <th>Subgrupo</th>
+              <th>Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${secciones.map(s => `
+              <tr data-id="${s.id_seccion}">
+                <td>${s.id_seccion}</td>
+                <td>${s.Nivel}</td>
+                <td>${s.Grupo}</td>
+                <td>${s.Subgrupo}</td>
+                <td>
+                  <button class="btn btn-warning btn-sm editar-seccion-btn">Editar</button>
+                  <button class="btn btn-danger btn-sm eliminar-seccion-btn">Eliminar</button>
+                </td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  `;
+}
+
+// =============================================================
+// FORMULARIO AGREGAR / EDITAR
+// =============================================================
+function mostrarFormularioSeccion(modo, data = {}) {
+  const module = document.getElementById('module-content');
+  module.style.display = 'none';
+
+  const formDiv = document.createElement('div');
+  formDiv.id = 'seccion-form-section';
+  formDiv.innerHTML = `
+    <div class="seccion-form-container">
+      <h3>${modo === 'editar' ? 'Editar sección' : 'Agregar nueva sección'}</h3>
+      <form id="seccion-form">
+        ${modo === 'editar' ? `
+          <label>ID:</label>
+          <input type="text" id="id_seccion" value="${data.id_seccion || ''}" readonly>
+        ` : ''}
+        <label>Nivel:</label>
+        <input type="text" id="nivel" value="${data.Nivel || ''}" required>
+        <label>Grupo:</label>
+        <input type="text" id="grupo" value="${data.Grupo || ''}" required>
+        <label>Subgrupo:</label>
+        <input type="text" id="subgrupo" value="${data.Subgrupo || ''}" required>
+        <div class="form-buttons">
+          <button type="button" id="guardar-seccion-btn" class="btn btn-success btn-sm">
+            ${modo === 'editar' ? 'Actualizar' : 'Guardar'}
+          </button>
+          <button type="button" id="cancelar-seccion-btn" class="btn btn-secondary btn-sm">Cancelar</button>
+        </div>
+      </form>
+    </div>
+  `;
+  module.parentNode.insertBefore(formDiv, module.nextSibling);
+
+  // Eventos
+  document.getElementById('guardar-seccion-btn').onclick = function() {
+    guardarSeccion(modo);
+  };
+  document.getElementById('cancelar-seccion-btn').onclick = function() {
+    formDiv.remove();
+    module.style.display = 'block';
+  };
+}
+
+// =============================================================
+// GUARDAR / ACTUALIZAR / ELIMINAR
+// =============================================================
+function guardarSeccion(modo) {
+  const data = {
+    id_seccion: document.getElementById('id_seccion')?.value || '',
+    Nivel: document.getElementById('nivel').value.trim(),
+    Grupo: document.getElementById('grupo').value.trim(),
+    Subgrupo: document.getElementById('subgrupo').value.trim()
+  };
+
+  if (!data.Nivel || !data.Grupo || !data.Subgrupo) {
+    alert("Complete todos los campos");
+    return;
+  }
+
+  showLoader();
+  const callback = function(res) {
+    hideLoader();
+    if (res.success) {
+      alert(res.message);
+      document.getElementById('seccion-form-section').remove();
+      document.getElementById('module-content').style.display = 'block';
+      showSeccionesModule();
+    } else {
+      alert(res.error || 'Error en la operación');
+    }
+  };
+
+  if (modo === 'editar') {
+    google.script.run.withSuccessHandler(callback)
+      .withFailureHandler(() => { hideLoader(); alert('Error'); })
+      .editarSeccionGS(data);
+  } else {
+    google.script.run.withSuccessHandler(callback)
+      .withFailureHandler(() => { hideLoader(); alert('Error'); })
+      .agregarSeccionGS(data);
+  }
+}
+
+// =============================================================
+// EVENTOS DE TABLA
+// =============================================================
+document.addEventListener('click', function(e) {
+  // Agregar
+  if (e.target && e.target.id === 'add-seccion-btn') {
+    mostrarFormularioSeccion('agregar');
+    return;
+  }
+
+  // Editar
+  if (e.target && e.target.classList.contains('editar-seccion-btn')) {
+    const row = e.target.closest('tr');
+    const data = {
+      id_seccion: row.dataset.id,
+      Nivel: row.children[1].textContent,
+      Grupo: row.children[2].textContent,
+      Subgrupo: row.children[3].textContent
+    };
+    mostrarFormularioSeccion('editar', data);
+    return;
+  }
+
+  // Eliminar
+  if (e.target && e.target.classList.contains('eliminar-seccion-btn')) {
+    const id = e.target.closest('tr').dataset.id;
+    if (confirm('¿Deseas eliminar esta sección permanentemente?')) {
+      showLoader();
+      google.script.run
+        .withSuccessHandler(function(res) {
+          hideLoader();
+          alert(res.message || 'Eliminado');
+          showSeccionesModule();
+        })
+        .withFailureHandler(function() {
+          hideLoader();
+          alert('Error al eliminar');
+        })
+        .eliminarSeccionGS(id);
+    }
+  }
+});
+</script>
+

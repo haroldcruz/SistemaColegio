@@ -1,0 +1,190 @@
+<!-- logic_materias.html -->
+<script>
+// =============================================================
+// MÓDULO CRUD DE MATERIAS
+// =============================================================
+
+// 🔹 Cargar y mostrar todas las materias
+function showMateriasModule() {
+  // oculta dashboard y muestra loader
+  document.querySelector('.dashboard-container').style.display = 'none';
+  showLoader();
+
+  google.script.run
+    .withSuccessHandler(function(materias) {
+      hideLoader();
+      renderMateriasTable(materias);
+    })
+    .withFailureHandler(function() {
+      hideLoader();
+      alert("Error al cargar materias");
+    })
+    .getMateriasData();
+}
+
+// 🔹 Renderiza la tabla principal
+function renderMateriasTable(materias) {
+  const module = document.getElementById('module-content');
+
+  // obtiene rol para pintar acciones
+  google.script.run.withSuccessHandler(function(user){
+    const role = (user.role || '').toLowerCase();
+    const puede = role === 'administrador' || role === 'secretaria';
+
+    const addBtn = puede ? `<button id="add-materia-btn" class="btn btn-success btn-sm">Agregar materia</button>` : '';
+
+    module.innerHTML = `
+      <div id="materias-module">
+        <h3>Gestión de Materias</h3>
+        ${addBtn}
+        <div class="table-responsive">
+          <table class="table materias-table">
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Código</th>
+                <th>Nombre</th>
+                ${puede ? '<th>Acciones</th>' : ''}
+              </tr>
+            </thead>
+            <tbody>
+              ${(materias || []).map(m => `
+                <tr data-id="${m.id_materia}">
+                  <td>${m.id_materia}</td>
+                  <td>${m.codigo}</td>
+                  <td>${m.nombre}</td>
+                  ${puede ? `
+                    <td>
+                      <button class="btn btn-warning btn-sm editar-materia-btn">Editar</button>
+                      <button class="btn btn-danger btn-sm eliminar-materia-btn">Eliminar</button>
+                    </td>` : ''}
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    `;
+  }).getUserRole();
+}
+
+// =============================================================
+// FORMULARIO AGREGAR / EDITAR
+// =============================================================
+function mostrarFormularioMateria(modo, data = {}) {
+  const module = document.getElementById('module-content');
+  module.style.display = 'none';
+
+  const formDiv = document.createElement('div');
+  formDiv.id = 'materia-form-section';
+  formDiv.innerHTML = `
+    <div class="materia-form-container">
+      <h3>${modo === 'editar' ? 'Editar materia' : 'Agregar nueva materia'}</h3>
+      <form id="materia-form">
+        ${modo === 'editar' ? `
+          <label>ID:</label>
+          <input type="text" id="id_materia" value="${data.id_materia || ''}" readonly>
+        ` : ''}
+        <label>Código:</label>
+        <input type="text" id="codigo" value="${data.codigo || ''}" required>
+        <label>Nombre:</label>
+        <input type="text" id="nombre" value="${data.nombre || ''}" required>
+        <div class="form-buttons">
+          <button type="button" id="guardar-materia-btn" class="btn btn-success btn-sm">
+            ${modo === 'editar' ? 'Actualizar' : 'Guardar'}
+          </button>
+          <button type="button" id="cancelar-materia-btn" class="btn btn-secondary btn-sm">Cancelar</button>
+        </div>
+      </form>
+    </div>
+  `;
+  module.parentNode.insertBefore(formDiv, module.nextSibling);
+
+  // eventos guardar/cancelar
+  document.getElementById('guardar-materia-btn').onclick = function() {
+    guardarMateria(modo);
+  };
+  document.getElementById('cancelar-materia-btn').onclick = function() {
+    formDiv.remove();
+    module.style.display = 'block';
+  };
+}
+
+// =============================================================
+// GUARDAR / ACTUALIZAR / ELIMINAR
+// =============================================================
+function guardarMateria(modo) {
+  const data = {
+    id_materia: document.getElementById('id_materia')?.value || '',
+    codigo: document.getElementById('codigo').value.trim(),
+    nombre: document.getElementById('nombre').value.trim()
+  };
+  if (!data.codigo || !data.nombre) {
+    alert("Complete código y nombre");
+    return;
+  }
+
+  showLoader();
+  const cb = function(res) {
+    hideLoader();
+    if (res.success) {
+      alert(res.message);
+      document.getElementById('materia-form-section').remove();
+      document.getElementById('module-content').style.display = 'block';
+      showMateriasModule(); // recarga
+    } else {
+      alert(res.error || 'Error en la operación');
+    }
+  };
+
+  if (modo === 'editar') {
+    google.script.run.withSuccessHandler(cb)
+      .withFailureHandler(()=>{ hideLoader(); alert('Error'); })
+      .editarMateriaGS(data);
+  } else {
+    google.script.run.withSuccessHandler(cb)
+      .withFailureHandler(()=>{ hideLoader(); alert('Error'); })
+      .agregarMateriaGS(data);
+  }
+}
+
+// =============================================================
+// EVENTOS DE TABLA (delegados)
+// =============================================================
+document.addEventListener('click', function(e) {
+  // Agregar
+  if (e.target && e.target.id === 'add-materia-btn') {
+    mostrarFormularioMateria('agregar');
+    return;
+  }
+  // Editar
+  if (e.target && e.target.classList.contains('editar-materia-btn')) {
+    const row = e.target.closest('tr');
+    const data = {
+      id_materia: row.dataset.id,
+      codigo: row.children[1].textContent,
+      nombre: row.children[2].textContent
+    };
+    mostrarFormularioMateria('editar', data);
+    return;
+  }
+  // Eliminar
+  if (e.target && e.target.classList.contains('eliminar-materia-btn')) {
+    const id = e.target.closest('tr').dataset.id;
+    if (confirm('¿Deseas eliminar esta materia permanentemente?')) {
+      showLoader();
+      google.script.run
+        .withSuccessHandler(function(res) {
+          hideLoader();
+          alert(res.message || 'Eliminado');
+          showMateriasModule();
+        })
+        .withFailureHandler(function() {
+          hideLoader();
+          alert('Error al eliminar');
+        })
+        .eliminarMateriaGS(id);
+    }
+  }
+});
+</script>

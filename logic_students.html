@@ -1,0 +1,256 @@
+<script>
+// -------------------------------------------------------------
+// MOSTRAR TABLA DE ESTUDIANTES (corregido con secciones)
+// -------------------------------------------------------------
+let estudiantesOriginal = [];
+let seccionesOriginal = [];
+
+function showStudentsModule() {
+  showLoader();
+  document.querySelector('.dashboard-container').style.display = 'none'; // 🔹 oculta dashboard
+  google.script.run
+    .withSuccessHandler(function(usuarioLogueado) {
+      google.script.run
+        .withSuccessHandler(function(seccionesData) {
+          seccionesOriginal = seccionesData;
+          google.script.run
+            .withSuccessHandler(function(studentsData) {
+              estudiantesOriginal = studentsData;
+              renderStudentsTable(studentsData, seccionesData, 1, 10, usuarioLogueado.role);
+              hideLoader();
+            })
+            .withFailureHandler(showLoadingError)
+            .getStudentsData(usuarioLogueado);
+        })
+        .withFailureHandler(showLoadingError)
+        .getSeccionesData();
+    })
+    .withFailureHandler(showLoadingError)
+    .getUserRole();
+}
+
+// -------------------------------------------------------------
+// OBTIENE ESTUDIANTES FILTRADOS POR BUSQUEDA Y SECCION
+// -------------------------------------------------------------
+function getEstudiantesFiltrados() {
+  const texto = document.getElementById('student-search').value.toLowerCase();
+  const seccion = document.getElementById('section-filter').value;
+  return estudiantesOriginal.filter(e => {
+    const nombre = [e.Nombre, e['Primer apellido'], e['Segundo apellido']].filter(Boolean).join(' ').toLowerCase();
+    const cedula = (e['Cédula'] || '').toLowerCase();
+    const coincideBusqueda = nombre.includes(texto) || cedula.includes(texto);
+    const coincideSeccion = !seccion || e['Sección'] === seccion;
+    return coincideBusqueda && coincideSeccion;
+  });
+}
+
+// -------------------------------------------------------------
+// CARGA OPCIONES DINÁMICAS DE SECCIÓN
+// -------------------------------------------------------------
+function cargarOpcionesSeccion() {
+  const select = document.getElementById('section-filter');
+  const secciones = [...new Set(estudiantesOriginal.map(e => e['Sección']).filter(Boolean))];
+  select.innerHTML = `<option value="">Todas las secciones</option>` +
+    secciones.map(sec => `<option value="${sec}">${sec}</option>`).join('');
+}
+
+// -------------------------------------------------------------
+// PREPARA DATOS PARA IMPORTAR
+// -------------------------------------------------------------
+function prepararDatosImportacion(datosCrudos) {
+  // Filtra encabezados y campos extra
+  return datosCrudos
+    .filter(e => e["Cédula"] && e["Cédula"] !== "Cédula")
+    .map(e => ({
+      "Cédula": e["Cédula"],
+      "Primer apellido": e["Primer apellido"],
+      "Segundo apellido": e["Segundo apellido"],
+      "Nombre": e["Nombre"],
+      "Nacionalidad": e["Nacionalidad"] || "",
+      "Sexo": e["Sexo"] || "",
+      "Fecha de nacimiento": e["Fecha de nacimiento"] || "",
+      "Sección": e["Sección"] || "",
+      "Encargado ID": e["Cédula (del encargado)"] || "",
+      "Teléfono": e["Teléfono"] || ""
+    }));
+}
+
+// -------------------------------------------------------------
+// RENDER DE TABLA HTML + FILTROS (corregido y completo)
+// -------------------------------------------------------------
+function renderStudentsTable(students, secciones, page = 1, pageSize = 10, role = '') {
+  const moduleContent = document.getElementById('module-content');
+
+  // 🔹 Filtros y botón de agregar estudiante
+  let filtrosHTML = `
+    <div class="students-filters">
+      <input type="text" id="student-search" class="student-search" placeholder="Buscar por nombre o cédula">
+      <button id="student-search-btn" class="student-search-btn">Buscar</button>
+      <select id="section-filter" class="section-filter"></select>
+      <button id="add-student-btn" class="add-student-btn">
+        <i class="fa fa-user-plus"></i> Agregar estudiante
+      </button>
+    </div>
+  `;
+
+  // 🔹 Importación solo para admin
+  let importacionHTML = "";
+  if (role === 'Administrador') {
+    importacionHTML = `
+      <div class="importacion-estudiantes">
+        <label for="import-students-file">Importación de estudiantes:</label>
+        <input type="file" id="import-students-file" class="import-students-file" accept=".csv,.xlsx">
+        <button id="import-students-btn" class="import-students-btn">Importar</button>
+      </div>
+    `;
+  }
+
+  // 🔹 Si no hay estudiantes
+  if (!students || students.length === 0) {
+    moduleContent.innerHTML = filtrosHTML + importacionHTML + '<div class="no-data"><p>No hay estudiantes para mostrar.</p></div>';
+    cargarOpcionesSeccion();
+    return;
+  }
+
+  // 🔹 Paginación
+  const totalPages = Math.ceil(students.length / pageSize);
+  const startIdx = (page - 1) * pageSize;
+  const endIdx = startIdx + pageSize;
+  const studentsToShow = students.slice(startIdx, endIdx);
+
+  // 🔹 Tabla principal
+  let html = '<table class="students-table"><thead><tr>';
+  html += '<th>Cédula</th><th>Nombre</th><th>Sección</th><th>Acciones</th></tr></thead><tbody>';
+
+  studentsToShow.forEach(s => {
+    const nombreCompleto = [s.Nombre, s['Primer apellido'], s['Segundo apellido']].filter(Boolean).join(' ');
+    const seccionObj = secciones.find(sec => sec.id_seccion == s['Sección']);
+    const seccionTexto = seccionObj ? `${seccionObj.Nivel} ${seccionObj.Grupo}-${seccionObj.Subgrupo}` : '';
+
+    html += `
+      <tr>
+        <td>${s['Cédula'] ?? ''}</td>
+        <td>${nombreCompleto}</td>
+        <td>${seccionTexto}</td>
+        <td>
+          <button class="ver-btn" data-id="${s['Cédula']}">Ver</button>
+          ${role === 'Administrador'
+            ? `<button class="editar-btn" data-id="${s['Cédula']}">Editar</button>
+               <button class="eliminar-btn" data-id="${s['Cédula']}">Eliminar</button>`
+            : ''}
+        </td>
+      </tr>`;
+  });
+
+  html += '</tbody></table>';
+
+  // 🔹 Navegación
+  html += `
+    <div class="pagination">
+      <button ${page === 1 ? "disabled" : ""} id="prev-page">Anterior</button>
+      <span>Página ${page} de ${totalPages}</span>
+      <button ${page === totalPages ? "disabled" : ""} id="next-page">Siguiente</button>
+    </div>
+  `;
+
+  // 🔹 Divs ocultos para vistas/edición/eliminación
+  const extraDivs = `
+    <div id="vistaEstudiantes" style="display:none;"></div>
+    <div id="editarEstudiantes" style="display:none;"></div>
+    <div id="eliminarEstudiantes" style="display:none;"></div>
+  `;
+
+  // 🔹 Insertar todo
+  moduleContent.innerHTML = filtrosHTML + importacionHTML + html + extraDivs;
+  cargarOpcionesSeccion();
+
+  // 🔹 Paginación
+  document.getElementById('prev-page')?.addEventListener('click', () => {
+    renderStudentsTable(students, secciones, page - 1, pageSize, role);
+  });
+  document.getElementById('next-page')?.addEventListener('click', () => {
+    renderStudentsTable(students, secciones, page + 1, pageSize, role);
+  });
+
+  // 🔹 Filtros
+  document.getElementById('student-search-btn').addEventListener('click', () => {
+    const filtrados = getEstudiantesFiltrados();
+    renderStudentsTable(filtrados, secciones, 1, pageSize, role);
+  });
+  document.getElementById('student-search').addEventListener('keyup', (e) => {
+    if (e.key === 'Enter') {
+      const filtrados = getEstudiantesFiltrados();
+      renderStudentsTable(filtrados, secciones, 1, pageSize, role);
+    }
+  });
+  document.getElementById('section-filter').addEventListener('change', () => {
+    const filtrados = getEstudiantesFiltrados();
+    renderStudentsTable(filtrados, secciones, 1, pageSize, role);
+  });
+
+  // 🔹 Importación admin
+  if (role === 'Administrador') {
+    const importBtn = document.getElementById('import-students-btn');
+    if (importBtn) {
+      importBtn.addEventListener('click', function () {
+        if (!confirm("Este proceso no podrá ser revertido. ¿Desea continuar?")) return;
+        showLoader();
+        const fileInput = document.getElementById('import-students-file');
+        const file = fileInput.files[0];
+        if (!file) {
+          alert('Seleccione un archivo primero.');
+          hideLoader();
+          return;
+        }
+        const ext = file.name.split('.').pop().toLowerCase();
+        if (ext === 'csv') {
+          Papa.parse(file, {
+            header: true,
+            complete: function (results) {
+              enviarAlBackend(results.data);
+            },
+            error: function () {
+              hideLoader();
+              alert('Error al leer el archivo CSV.');
+            }
+          });
+        } else if (ext === 'xlsx') {
+          const reader = new FileReader();
+          reader.onload = function (e) {
+            const data = new Uint8Array(e.target.result);
+            const workbook = XLSX.read(data, { type: 'array' });
+            const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+            const json = XLSX.utils.sheet_to_json(firstSheet);
+            enviarAlBackend(json);
+          };
+          reader.onerror = function () {
+            hideLoader();
+            alert('Error al leer el archivo XLSX.');
+          };
+          reader.readAsArrayBuffer(file);
+        } else {
+          hideLoader();
+          alert('Formato no soportado. Solo CSV o XLSX.');
+        }
+
+        function enviarAlBackend(datosCrudos) {
+          const datosPreparados = prepararDatosImportacion(datosCrudos);
+          google.script.run.withSuccessHandler(function (res) {
+            hideLoader();
+            if (res && res[0] && res[0].estado === 'insertado') {
+              alert('Importación exitosa.');
+            } else if (res && res[0]) {
+              alert('Error: ' + res[0].motivo);
+            } else {
+              alert('Hubo errores en la importación.');
+            }
+          }).withFailureHandler(function (err) {
+            hideLoader();
+            alert('Error en el backend: ' + (err.message || err));
+          }).importacionEstudianteGS(datosPreparados);
+        }
+      });
+    }
+  }
+}
+</script>

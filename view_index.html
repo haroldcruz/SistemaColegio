@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <base target="_top">
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+  <?!= include('css_main') ?>
+  <?!= include('css_student') ?>
+  <?!= include('css_sections') ?>
+  <?!= include('css_materias') ?>
+</head>
+<!-- Bloqueo total: overlay con spinner -->
+      <div id="loader" class="loader-container">
+        <div class="spinner"></div>
+        <p>Cargando información</p>
+      </div>
+<body>
+  <div class="main-container">
+    <!-- SIDEBAR -->
+    <div class="sidebar">
+      <div class="logo">
+        <img src="data:image/png;base64,<?= obtenerEscudo() ?>" alt="SEA Logo">
+        <p>Evaluación Volio Jiménez</p>
+      </div>
+
+      <div id="user-info-placeholder" class="user-info">
+        <p id="greeting-name"></p>
+        <p id="greeting-role"></p>
+      </div>
+      <!-- Botón hamburguesa, visible solo en móviles -->
+      <button id="hamburger-btn" class="hamburger-btn">&#9776;</button>
+      <div id="sidebar-mobile" class="sidebar hidden">
+        <!-- Aquí va tu menú lateral -->
+      </div>
+      <div id="sidebar-menu-wrapper">
+        <nav class="sidebar-nav">
+          <a href="#" class="nav-item active home-nav-item" data-target="dashboard">
+            <i class="material-icons">home</i><span>Inicio</span>
+          </a>
+          <a href="#" class="nav-item sections-nav-item" data-target="sections">
+            <i class="material-icons">groups</i><span>Grupos/Secciones</span>
+          </a>
+          <a href="#" class="nav-item students-nav-item" data-target="students">
+            <i class="material-icons">school</i><span>Estudiantado</span>
+          </a>
+          <a href="#" class="nav-item subjects-nav-item" data-target="subjects">
+            <i class="material-icons">assignment</i><span>Materias</span>
+          </a>
+          <a href="#" class="nav-item evaluations-nav-item" data-target="evaluations">
+            <i class="material-icons">note_add</i><span>Evaluaciones</span>
+          </a>
+          <a href="#" class="nav-item behavior-nav-item" data-target="behavior">
+            <i class="material-icons">report</i><span>Reportes de Conducta</span>
+          </a>
+          <a href="#" class="nav-item users-nav-item" data-target="users">
+            <i class="material-icons">person</i><span>Usuarios</span>
+          </a>
+          <a href="#" class="nav-item guardians-nav-item" data-target="guardians">
+            <i class="material-icons">security</i><span>Encargados</span>
+          </a>
+          <a href="#" class="nav-item communications-nav-item" data-target="comunicaciones">
+            <i class="material-icons">email</i><span>Comunicaciones</span>
+          </a>
+          <a href="#" class="nav-item justifications-nav-item" data-target="justificaciones">
+            <i class="material-icons">pending_actions</i><span>Justificaciones</span>
+          </a>
+        </nav>
+      </div>
+    </div>
+
+    <!-- CONTENT WRAPPER -->
+    <div class="content-wrapper">
+      <div id="content" class="hidden">
+        <div class="header-main">
+          <h2>Panel de Control</h2>
+        </div>
+
+        <!-- DASHBOARD -->
+        <div class="dashboard-container">
+          <div class="card users-card">
+            <h3>Usuarios Registrados</h3>
+            <p id="usersCount" class="count-number">Cargando...</p>
+          </div>
+          <div class="card students-card">
+            <h3>Estudiantes</h3>
+            <p id="studentsCount" class="count-number">Cargando...</p>
+          </div>
+          <div class="card subjects-card">
+            <h3>Materias</h3>
+            <p id="subjectsCount" class="count-number">Cargando...</p>
+          </div>
+          <div class="card guardians-card">
+            <h3>Encargados</h3>
+            <p id="guardiansCount" class="count-number">Cargando...</p>
+          </div>
+          <div class="card evaluations-card">
+            <h3>Evaluaciones</h3>
+            <p id="evaluationsCount" class="count-number">Cargando...</p>
+          </div>
+          <div class="card behavior-card">
+            <h3>Reportes de Conducta</h3>
+            <p id="behaviorCount" class="count-number">Cargando...</p>
+          </div>
+          <div class="card sections-card">
+            <h3>Secciones</h3>
+            <p id="sectionsCount" class="count-number">Cargando...</p>
+          </div>
+        </div>
+
+        <!-- MÓDULOS DINÁMICOS -->
+        <div id="module-content"></div>
+      </div>
+    </div>
+  </div>
+  <?!= include('logic_main') ?>
+  <?!= include('logic_students') ?>
+  // En el archivo .html donde generas la tabla, agrega:
+  <?!= include('logic_student_view') ?>
+  <?!= include('logic_student_edit') ?>
+   <?!= include('logic_student_create') ?>
+    <?!= include('logic_student_delete') ?>
+    <?!= include('logic_sections') ?>
+    <?!= include('logic_materias') ?>
+  <!-- PapaParse (CSV) -->
+  <script src="https://cdn.jsdelivr.net/npm/papaparse@5.3.2/papaparse.min.js"></script>
+  <!-- SheetJS (XLSX) -->
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+</body>
+
+</html>

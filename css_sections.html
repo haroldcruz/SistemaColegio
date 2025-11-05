@@ -1,0 +1,163 @@
+<style>
+#secciones-module {
+  background: var(--light-gray-bg, #2d4c6d);
+  color: var(--white-text, #f0f0f0);
+  padding: 20px;
+  border-radius: 12px;
+  box-shadow: 0 3px 8px rgba(0,0,0,0.25);
+  margin-top: 10px;
+}
+
+/* Título principal */
+#secciones-module h3 {
+  color: var(--accent-gold, #D4AF37);
+  font-weight: 600;
+  text-align: center;
+  margin-bottom: 15px;
+}
+
+/* Botón "Agregar sección" */
+#add-seccion-btn {
+  background-color: var(--accent-gold, #D4AF37);
+  color: var(--dark-blue, #162840);
+  border: none;
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-weight: bold;
+  margin-bottom: 12px;
+  transition: background 0.2s;
+}
+
+#add-seccion-btn:hover {
+  background-color: #c29c30;
+}
+
+/* Tabla de secciones */
+.secciones-table {
+  width: 100%;
+  border-collapse: collapse;
+  background: #ffffff;
+  color: #000000;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.secciones-table thead {
+  background-color: var(--light-dark-blue, #1f3e72);
+  color: #ffffff;
+}
+
+.secciones-table th,
+.secciones-table td {
+  padding: 10px 12px;
+  text-align: left;
+  border-bottom: 1px solid #ccc;
+}
+
+.secciones-table tr:hover {
+  background-color: #f5f5f5;
+}
+
+/* Botones de acción dentro de la tabla */
+.secciones-table .btn {
+  padding: 4px 8px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.secciones-table .btn-warning {
+  background-color: #ffc107;
+  color: #000;
+}
+
+.secciones-table .btn-danger {
+  background-color: #dc3545;
+  color: #fff;
+}
+
+/* Contenedor del formulario (agregar/editar) */
+.seccion-form-container {
+  background-color: #fff;
+  color: #000;
+  padding: 20px;
+  margin: 20px 0;
+  border-radius: 10px;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+  max-width: 480px;
+}
+
+.seccion-form-container h3 {
+  color: var(--light-dark-blue, #1f3e72);
+  margin-bottom: 15px;
+  text-align: center;
+}
+
+/* Campos del formulario */
+#seccion-form label {
+  display: block;
+  font-weight: 600;
+  margin-top: 10px;
+  color: var(--dark-blue, #162840);
+}
+
+#seccion-form input[type="text"] {
+  width: 100%;
+  padding: 8px;
+  margin-top: 4px;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  outline: none;
+}
+
+#seccion-form input[type="text"]:focus {
+  border-color: var(--accent-gold, #D4AF37);
+}
+
+/* Botones dentro del formulario */
+.form-buttons {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 15px;
+}
+
+.form-buttons button {
+  flex: 1;
+  margin: 0 4px;
+  padding: 8px;
+  border-radius: 6px;
+  border: none;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+/* Botón guardar (verde institucional) */
+.form-buttons .btn-success {
+  background-color: var(--light-dark-blue, #1f3e72);
+  color: #fff;
+}
+
+.form-buttons .btn-success:hover {
+  background-color: #2b5190;
+}
+
+/* Botón cancelar (gris claro) */
+.form-buttons .btn-secondary {
+  background-color: #ddd;
+  color: #000;
+}
+
+.form-buttons .btn-secondary:hover {
+  background-color: #c5c5c5;
+}
+
+/* Sombra ligera y responsividad */
+@media (max-width: 600px) {
+  .seccion-form-container {
+    width: 100%;
+    margin: 10px 0;
+    padding: 15px;
+  }
+}
+</style>

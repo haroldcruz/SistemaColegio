@@ -1,0 +1,88 @@
+<!-- css_materias.html -->
+<style>
+  /* Contenedor principal */
+  #materias-module {
+    background: var(--dark-blue);
+    color: var(--white-text);
+    padding: 16px;
+    border-radius: 8px;
+  }
+
+  /* Título */
+  #materias-module h3 {
+    margin: 0 0 12px 0;
+    font-weight: 600;
+    border-bottom: 2px solid var(--accent-gold);
+    padding-bottom: 8px;
+  }
+
+  /* Tabla responsiva */
+  .table-responsive {
+    width: 100%;
+    overflow-x: auto;
+  }
+
+  /* Tabla */
+  .table.materias-table {
+    width: 100%;
+    border-collapse: collapse;
+    background: rgba(255,255,255,0.02);
+    border-radius: 8px;
+  }
+  .table.materias-table thead th {
+    text-align: left;
+    padding: 10px 12px;
+    font-weight: 600;
+    border-bottom: 1px solid rgba(255,255,255,0.12);
+  }
+  .table.materias-table tbody td {
+    padding: 10px 12px;
+    border-bottom: 1px solid rgba(255,255,255,0.08);
+  }
+  .table.materias-table tbody tr:hover {
+    background: rgba(255,255,255,0.05);
+  }
+
+  /* Formulario */
+  .materia-form-container {
+    background: var(--dark-blue);
+    color: var(--white-text);
+    padding: 16px;
+    border-radius: 8px;
+    margin-top: 12px;
+    border: 1px solid rgba(255,255,255,0.08);
+  }
+  .materia-form-container h3 {
+    margin-top: 0;
+    border-bottom: 2px solid var(--accent-gold);
+    padding-bottom: 8px;
+    font-weight: 600;
+  }
+  .materia-form-container label {
+    display: block;
+    margin: 10px 0 4px;
+    font-size: 0.9rem;
+    opacity: 0.9;
+  }
+  .materia-form-container input {
+    width: 100%;
+    padding: 8px 10px;
+    border-radius: 6px;
+    border: 1px solid rgba(255,255,255,0.2);
+    background: #fff;
+    color: #000;
+  }
+  .form-buttons {
+    margin-top: 14px;
+    display: flex;
+    gap: 8px;
+  }
+
+  /* Botones base (reutilizables) */
+  .btn { cursor: pointer; border: 0; border-radius: 6px; padding: 6px 10px; }
+  .btn-sm { font-size: 0.85rem; }
+  .btn-success { background: #2e7d32; color: #fff; }
+  .btn-warning { background: #ed6c02; color: #fff; }
+  .btn-danger  { background: #c62828; color: #fff; }
+  .btn-secondary { background: #555; color: #fff; }
+</style>

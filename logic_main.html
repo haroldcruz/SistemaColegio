@@ -1,0 +1,230 @@
+<!-- logic_main.html (router central unificado) -->
+<script>
+// Script principal del dashboard
+// Gestiona la carga inicial, navegación y control de roles
+
+// -------------------------------------------------------------
+// REFERENCIAS A ELEMENTOS DE INTERFAZ
+// -------------------------------------------------------------
+const loader = document.getElementById('loader');
+const content = document.getElementById('content');
+const dashboardContainer = document.querySelector('.dashboard-container');
+const moduleContent = document.getElementById('module-content');
+const navItems = document.querySelectorAll('.nav-item');
+
+// Menú móvil
+document.getElementById('hamburger-btn').onclick = function() {
+  document.getElementById('sidebar-mobile').classList.toggle('show');
+};
+document.addEventListener('click', function(e) {
+  const sidebarMobile = document.getElementById('sidebar-mobile');
+  const btn = document.getElementById('hamburger-btn');
+  if (sidebarMobile.classList.contains('show') && !sidebarMobile.contains(e.target) && e.target !== btn) {
+    sidebarMobile.classList.remove('show');
+  }
+});
+
+// -------------------------------------------------------------
+// ERRORES Y ACCESO
+// -------------------------------------------------------------
+function showLoadingError(error) {
+  loader.style.display = 'none';
+  content.classList.remove('hidden');
+  content.innerHTML = `
+    <div style="color:var(--white-text); text-align:center; padding:50px; background-color: var(--dark-blue); border-radius:8px; margin-top:50px;">
+      <i class="material-icons" style="font-size:4em; color:red;">error</i>
+      <h3 style="color:red;">Error Crítico del Sistema</h3>
+      <p>Hubo un problema al contactar al servidor o de permisos.</p>
+      <p style="font-size:0.8em; color:#ccc;">Detalle: ${error?.message || 'Desconocido'}</p>
+    </div>`;
+  document.getElementById('sidebar-menu-wrapper')?.classList.add('show-content');
+}
+
+function showAccessDenied(userRole, userName) {
+  const header = document.querySelector('.header-main h2');
+  if (header) header.textContent = 'Acceso Restringido';
+  content.innerHTML = `
+    <div style="color:var(--white-text); text-align:center; padding:50px; background-color: var(--dark-blue); border-radius:8px; margin-top:50px;">
+      <i class="material-icons" style="font-size:4em; color:var(--accent-gold);">security</i>
+      <h3 style="color:var(--accent-gold);">Acceso Denegado</h3>
+      <p>El usuario ${userName} (Rol: ${userRole}) no tiene permisos para ver el panel de control. Contacte a un administrador.</p>
+    </div>`;
+  loader.style.display = 'none';
+  content.classList.remove('hidden');
+  dashboardContainer.style.display = 'none';
+  moduleContent.innerHTML = '';
+  document.getElementById('sidebar-menu-wrapper')?.classList.add('show-content');
+}
+
+// -------------------------------------------------------------
+// DASHBOARD
+// -------------------------------------------------------------
+function showDashboardData(data) {
+  if (!data) return;
+  document.getElementById('usersCount').textContent = data.users ?? 0;
+  document.getElementById('studentsCount').textContent = data.students ?? 0;
+  document.getElementById('subjectsCount').textContent = data.subjects ?? 0;
+  document.getElementById('guardiansCount').textContent = data.guardians ?? 0;
+  document.getElementById('evaluationsCount').textContent = data.evaluations ?? 0;
+  document.getElementById('behaviorCount').textContent = data.behavior ?? 0;
+  document.getElementById('sectionsCount').textContent = data.sections ?? 0;
+}
+
+function onDataLoaded(data) {
+  showDashboardData(data);
+  loader.style.display = 'none';
+  content.classList.remove('hidden');
+  document.getElementById('sidebar-menu-wrapper')?.classList.add('show-content');
+  dashboardContainer.classList.add('show-content');
+}
+
+// -------------------------------------------------------------
+// NAVEGACIÓN CENTRAL
+// -------------------------------------------------------------
+function handleNavigationClick(event) {
+  event.preventDefault();
+  event.stopImmediatePropagation(); // evita listeners duplicados
+
+  const clickedItem = event.currentTarget;
+  const target = clickedItem?.getAttribute('data-target');
+  if (!target) return;
+
+  // activo visual
+  navItems.forEach(item => item.classList.remove('active'));
+  clickedItem.classList.add('active');
+
+  // título
+  const header = document.querySelector('.header-main h2');
+  if (header) {
+    header.textContent = target === 'students'
+      ? 'Alumnos'
+      : target.charAt(0).toUpperCase() + target.slice(1).replace('-', ' ');
+  }
+
+  if (target === 'dashboard') {
+    // mostrar dashboard
+    dashboardContainer.style.display = 'grid';
+    dashboardContainer.classList.add('show-content');
+    moduleContent.innerHTML = '';
+    return;
+  }
+
+  // ocultar dashboard y cargar módulo
+  dashboardContainer.style.display = 'none';
+  dashboardContainer.classList.remove('show-content');
+  showLoader();
+
+  // Router local (sin loadModule ni view_*.html)
+  switch (target) {
+    case 'students':
+      showStudentsModule();
+      break;
+    case 'sections':
+      showSeccionesModule();
+      break;
+    case 'subjects':
+      showMateriasModule();
+      break;
+    case 'evaluations':
+    case 'behavior':
+    case 'users':
+    case 'guardians':
+    case 'comunicaciones':
+    case 'justificaciones':
+      hideLoader();
+      moduleContent.innerHTML = '<div style="padding:12px;">Módulo no implementado aún.</div>';
+      break;
+    default:
+      hideLoader();
+      moduleContent.innerHTML = '<div style="padding:12px;">Destino desconocido.</div>';
+  }
+}
+
+function attachEventListeners() {
+  navItems.forEach(item => item.addEventListener('click', handleNavigationClick));
+}
+
+// -------------------------------------------------------------
+// INICIALIZACIÓN
+// -------------------------------------------------------------
+function initializeDashboard(userData) {
+  if (!userData) return showAccessDenied('Desconocido', 'Usuario');
+
+  const userRole = (userData.role || '').toLowerCase().trim();
+  const userName = userData.name || 'Usuario';
+  const userEmail = userData.email || '';
+  const encargadoId = userData.encargadoId || null;
+
+  const greetingName = document.getElementById('greeting-name');
+  const greetingRole = document.getElementById('greeting-role');
+  if (greetingName && greetingRole) {
+    greetingName.textContent = `Hola, ${userName}`;
+    greetingRole.textContent = `Rol: ${userData.role || 'Sin Rol'}`;
+    greetingName.classList.add('loaded');
+    greetingRole.classList.add('loaded');
+  }
+
+  // ocultar todos por defecto
+  document.querySelectorAll('.card').forEach(c => c.style.display = 'none');
+  document.querySelectorAll('.sidebar-nav .nav-item').forEach(i => i.style.display = 'none');
+
+  let visibleCards = [];
+  let visibleNavItems = [];
+  visibleNavItems.push('.home-nav-item');
+
+  switch (userRole) {
+    case 'administrador':
+    case 'secretaria':
+      visibleCards = ['users-card', 'students-card', 'subjects-card', 'guardians-card', 'evaluations-card', 'behavior-card', 'sections-card'];
+      visibleNavItems.push('.sections-nav-item', '.students-nav-item', '.subjects-nav-item', '.evaluations-nav-item', '.behavior-nav-item', '.users-nav-item', '.guardians-nav-item', '.communications-nav-item', '.justifications-nav-item');
+      break;
+    case 'docente':
+    case 'profesor':
+      visibleCards = ['students-card', 'subjects-card', 'evaluations-card', 'behavior-card'];
+      visibleNavItems.push('.students-nav-item', '.subjects-nav-item', '.evaluations-nav-item', '.behavior-nav-item', '.sections-nav-item');
+      break;
+    case 'encargado':
+    case 'padre':
+      visibleCards = ['students-card', 'evaluations-card', 'behavior-card'];
+      visibleNavItems.push('.students-nav-item', '.evaluations-nav-item', '.behavior-nav-item', '.communications-nav-item', '.justifications-nav-item');
+      break;
+    default:
+      return showAccessDenied(userData.role || 'Desconocido', userName);
+  }
+
+  visibleCards.forEach(cls => document.querySelector('.' + cls)?.style.setProperty('display', 'flex'));
+  visibleNavItems.forEach(cls => document.querySelector(cls)?.style.setProperty('display', 'flex'));
+
+  attachEventListeners();
+
+  if (visibleCards.length > 0) {
+    google.script.run
+      .withSuccessHandler(onDataLoaded)
+      .withFailureHandler(showLoadingError)
+      .getDashboardData(userEmail, encargadoId);
+  } else {
+    showAccessDenied(userData.role || 'Desconocido', userName);
+  }
+}
+
+// Loader helpers
+function showLoader() {
+  document.getElementById('loader').style.display = 'flex';
+  document.getElementById('content').classList.add('hidden');
+}
+function hideLoader() {
+  document.getElementById('loader').style.display = 'none';
+  document.getElementById('content').classList.remove('hidden');
+}
+
+// Arranque
+function startLoading() {
+  loader.style.display = 'flex';
+  content.classList.add('hidden');
+  google.script.run
+    .withSuccessHandler(initializeDashboard)
+    .withFailureHandler(showLoadingError)
+    .getUserRole();
+}
+startLoading();
+</script>

@@ -1,0 +1,94 @@
+<script>
+// =============================================================
+// ELIMINAR ESTUDIANTE (vista de confirmación)
+// =============================================================
+document.addEventListener('click', function (e) {
+  const target = e.target;
+
+  // 🔹 Mostrar vista de confirmación
+  if (target && target.classList.contains('eliminar-btn')) {
+    const fila = target.closest('tr');
+    if (!fila) return;
+
+    // Oculta el módulo principal
+    const moduleContent = document.getElementById('module-content');
+    if (!moduleContent) return;
+    moduleContent.style.display = 'none';
+
+    // Obtiene los datos desde la fila
+    const celdas = fila.querySelectorAll('td');
+    const estudiante = {
+      cedula: target.dataset.id || celdas[0]?.innerText.trim() || "-",
+      nombre: celdas[1]?.innerText.trim() || "-",
+      seccion: celdas[2]?.innerText.trim() || "-"
+    };
+
+    // Crea el contenedor de confirmación
+    const confirmContainer = document.createElement('div');
+    confirmContainer.id = 'student-delete-section';
+    confirmContainer.classList.add('student-delete-container');
+    confirmContainer.innerHTML = `
+      <div class="delete-card">
+        <h3>Eliminar estudiante</h3>
+        <p>Confirma si deseas eliminar permanentemente al siguiente estudiante:</p>
+        <div class="delete-info">
+          <p><strong>Cédula:</strong> ${estudiante.cedula}</p>
+          <p><strong>Nombre:</strong> ${estudiante.nombre}</p>
+          <p><strong>Sección:</strong> ${estudiante.seccion}</p>
+        </div>
+        <div class="delete-buttons">
+          <button type="button" class="btn btn-danger btn-sm" id="confirmar-eliminar-btn" data-id="${estudiante.cedula}">
+            Confirmar eliminación
+          </button>
+          <button type="button" class="btn btn-secondary btn-sm" id="cancelar-eliminar-btn">
+            Cancelar
+          </button>
+        </div>
+      </div>
+    `;
+
+    moduleContent.parentNode.insertBefore(confirmContainer, moduleContent.nextSibling);
+  }
+
+  // 🔹 Cancelar eliminación
+  if (target && target.id === 'cancelar-eliminar-btn') {
+    const confirmContainer = document.getElementById('student-delete-section');
+    if (confirmContainer) confirmContainer.remove();
+
+    const moduleContent = document.getElementById('module-content');
+    if (moduleContent) moduleContent.style.display = 'block';
+    return;
+  }
+
+  // 🔹 Confirmar eliminación definitiva
+  if (target && target.id === 'confirmar-eliminar-btn') {
+    const cedula = target.dataset.id;
+    if (!cedula) {
+      alert('No se encontró la cédula del estudiante.');
+      return;
+    }
+
+    showLoader(); // spinner visual opcional
+
+    google.script.run
+      .withSuccessHandler(function (res) {
+        hideLoader();
+        if (res && res.success) {
+          alert(res.message || 'Estudiante eliminado correctamente.');
+          const confirmContainer = document.getElementById('student-delete-section');
+          if (confirmContainer) confirmContainer.remove();
+          const moduleContent = document.getElementById('module-content');
+          moduleContent.style.display = 'block';
+          showStudentsModule(); // recarga tabla
+        } else {
+          alert('Error: ' + (res.error || 'No se pudo eliminar el estudiante.'));
+        }
+      })
+      .withFailureHandler(function (err) {
+        hideLoader();
+        alert('Error en el backend: ' + (err.message || err));
+      })
+      .eliminarEstudianteGS(cedula);
+  }
+});
+</script>

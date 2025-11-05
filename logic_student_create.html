@@ -1,0 +1,200 @@
+<script>
+  function mostrarFormularioAgregarEstudiante() {
+    const moduleContent = document.getElementById('module-content');
+    moduleContent.style.display = 'none'; // Oculta la vista actual
+
+    // Crea contenedor nuevo del formulario
+    const formContainer = document.createElement('div');
+    formContainer.id = 'student-form-section';
+    formContainer.classList.add('student-form-container');
+    formContainer.innerHTML = `
+      <h3>Agregar nuevo estudiante</h3>
+      <form id="student-form" class="student-form">
+        <div class="form-row">
+          <label for="cedula">Cédula:</label>
+          <input type="text" id="cedula" required>
+        </div>
+        <div class="form-row">
+          <label for="apellido1">Primer apellido:</label>
+          <input type="text" id="apellido1" required>
+        </div>
+        <div class="form-row">
+          <label for="apellido2">Segundo apellido:</label>
+          <input type="text" id="apellido2">
+        </div>
+        <div class="form-row">
+          <label for="nombre">Nombre:</label>
+          <input type="text" id="nombre" required>
+        </div>
+        <div class="form-row">
+          <label for="nacionalidad">Nacionalidad:</label>
+          <select id="nacionalidad" name="nacionalidad" required>
+            <option value="Costa Rica" selected>Costa Rica</option>
+            <option value="Panamá">Panamá</option>
+            <option value="Nicaragua">Nicaragua</option>
+            <option value="EEUU">Estados Unidos</option>
+            <option value="Otro">Otro</option>
+          </select>
+        </div>
+        <div class="form-row">
+          <label for="sexo">Sexo:</label>
+          <select id="sexo" required>
+            <option value="">Seleccione</option>
+            <option value="F">Femenino</option>
+            <option value="M">Masculino</option>
+          </select>
+        </div>
+        <div class="form-row">
+          <label for="fechaNacimiento">Fecha de nacimiento:</label>
+          <input type="date" id="fechaNacimiento" required>
+        </div>
+        <div class="form-row">
+          <label for="seccion">Sección:</label>
+          <select id="seccion" name="seccion" required>
+            <option value="">Cargando secciones...</option>
+          </select>
+        </div>
+        <div class="form-row">
+          <label for="encargado">Encargado ID:</label>
+          <select id="encargado" required>
+            <option value="">Cargando encargados...</option>
+          </select>
+        </div>
+        <div class="form-row">
+          <label for="telefono">Teléfono:</label>
+          <input type="text" id="telefono" placeholder="8888-0000">
+        </div>
+
+        <div class="form-buttons">
+          <button type="button" id="guardar-estudiante-btn" class="guardar-btn">
+            <i class="material-icons">save</i> Guardar
+          </button>
+          <button type="button" id="cancelar-estudiante-btn" class="cancelar-btn">
+            <i class="material-icons">cancel</i> Cancelar
+          </button>
+        </div>
+      </form>
+    `;
+
+    moduleContent.parentNode.insertBefore(formContainer, moduleContent.nextSibling);
+
+    // 🔹 Cargar encargados con icono de carga
+    showLoader();
+    google.script.run
+      .withSuccessHandler(function(listaEncargados) {
+        hideLoader();
+        cargarOpcionesEncargados(listaEncargados);
+      })
+      .withFailureHandler(function() {
+        hideLoader();
+        alert("Error al cargar encargados");
+      })
+      .getEncargadosData();
+
+    // 🔹 Cargar secciones con icono de carga
+    showLoader();
+    google.script.run
+      .withSuccessHandler(function(listaSecciones) {
+        hideLoader();
+        cargarOpcionesSecciones(listaSecciones);
+      })
+      .withFailureHandler(function() {
+        hideLoader();
+        alert("Error al cargar secciones");
+      })
+      .getSeccionesData();
+  }
+
+  function cargarOpcionesEncargados(listaEncargados) {
+    const select = document.getElementById('encargado');
+    if (!select) return;
+    select.innerHTML = '<option value="">Seleccione un encargado</option>' +
+      listaEncargados.map(e => `<option value="${e.id}">${e.nombre}</option>`).join('');
+  }
+
+  // =============================================================
+  // GESTIÓN DE BOTONES DEL MÓDULO DE ESTUDIANTES
+  // =============================================================
+  document.addEventListener('click', function (e) {
+    const target = e.target;
+
+    // 🔹 Mostrar formulario
+    if (target && target.id === 'add-student-btn') {
+      mostrarFormularioAgregarEstudiante();
+      return;
+    }
+
+    // 🔹 Cancelar creación
+    if (target && target.id === 'cancelar-estudiante-btn') {
+      const formSection = document.getElementById('student-form-section');
+      const moduleContent = document.getElementById('module-content');
+      if (formSection) formSection.remove();
+      moduleContent.style.display = 'block';
+      return;
+    }
+
+    // 🔹 Guardar nuevo estudiante
+    if (target && target.id === 'guardar-estudiante-btn') {
+      const form = document.getElementById('student-form');
+      if (!form) return;
+      if (!form.reportValidity()) return;
+
+      // Validar edad mínima (5 años)
+      const nacimiento = new Date(document.getElementById('fechaNacimiento').value);
+      const hoy = new Date();
+      let edad = hoy.getFullYear() - nacimiento.getFullYear();
+      const mesDiff = hoy.getMonth() - nacimiento.getMonth();
+      if (mesDiff < 0 || (mesDiff === 0 && hoy.getDate() < nacimiento.getDate())) edad--;
+      if (edad < 5) {
+        alert('El estudiante debe tener al menos 5 años.');
+        return;
+      }
+
+      showLoader();
+
+      const data = {
+        cedula: document.getElementById('cedula').value.trim(),
+        primer_apellido: document.getElementById('apellido1').value.trim(),
+        segundo_apellido: document.getElementById('apellido2').value.trim(),
+        nombre: document.getElementById('nombre').value.trim(),
+        nacionalidad: document.getElementById('nacionalidad').value.trim(),
+        sexo: document.getElementById('sexo').value.trim(),
+        nacimiento: document.getElementById('fechaNacimiento').value,
+        seccion: document.getElementById('seccion').value.trim(),
+        encargado_id: document.getElementById('encargado').value.trim(),
+        telefono: document.getElementById('telefono').value.trim()
+      };
+
+      google.script.run
+        .withSuccessHandler(function (res) {
+          hideLoader();
+          if (res && res.success) {
+            alert(res.message || 'Estudiante agregado correctamente');
+            const formSection = document.getElementById('student-form-section');
+            if (formSection) formSection.remove();
+            const moduleContent = document.getElementById('module-content');
+            moduleContent.style.display = 'block';
+            showStudentsModule(); // recarga tabla
+          } else {
+            alert('Error: ' + (res.error || 'No se pudo guardar el estudiante'));
+          }
+        })
+        .withFailureHandler(function (err) {
+          hideLoader();
+          alert('Error en el backend: ' + (err.message || err));
+        })
+        .guardarNuevoEstudianteGS(data);
+    }
+  });
+
+  function cargarOpcionesSecciones(listaSecciones) {
+    const select = document.getElementById('seccion');
+    if (!select) return;
+    select.innerHTML = '<option value="">Seleccione una sección</option>' +
+      listaSecciones
+        .map(s => `<option value="${s.id_seccion}">
+          ${s.Nivel} ${s.Grupo} ${s.Subgrupo}
+        </option>`)
+        .join('');
+  }
+</script>

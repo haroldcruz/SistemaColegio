@@ -1,0 +1,198 @@
+<script>
+  //para inyectar el html al pricniplas
+function mostrarVistaEstudiante(datosArr, usuariosArr) {
+  const vistaDiv = document.getElementById('vistaEstudiantes');
+  const moduleContent = document.getElementById('module-content');
+  [...moduleContent.children].forEach(child => {
+    if (child !== vistaDiv) child.style.display = 'none';
+  });
+  vistaDiv.style.display = 'block';
+
+  // Extraer campos
+  const getCampo = (str, campo) => {
+    const m = str.match(new RegExp(campo + ":\\s*([^\\n]+)"));
+    return m ? m[1].trim() : "";
+  };
+
+  // Datos personales
+  const personalObj = datosArr.find(d => d.tipo === "personal");
+  const datos = personalObj ? personalObj.datos : "";
+  const cedula = getCampo(datos, "Cédula");
+  const nombre = getCampo(datos, "Nombre");
+  const primerApellido = getCampo(datos, "Primer apellido");
+  const segundoApellido = getCampo(datos, "Segundo apellido");
+  const seccion = getCampo(datos, "Sección") || "Sin asignar";
+  const correo = getCampo(datos, "Correo") || "-";
+  const telefono = getCampo(datos, "Teléfono") || "-";
+  const nombreCompleto = `${nombre} ${primerApellido} ${segundoApellido}`.trim();
+
+  // Materias y notas
+  const materiasArr = datosArr.find(d => d.tipo === "materias")?.datos || [];
+  const califArr = datosArr.find(d => d.tipo === "calificaciones")?.datos || [];
+  const claseArr = datosArr.find(d => d.tipo === "clase")?.datos || [];
+
+  const getNota = (idMateria) => {
+    const notaObj = califArr.find(str => getCampo(str, "Id_Materia") === idMateria);
+    return notaObj ? (getCampo(notaObj, "Finales") || getCampo(notaObj, "Parciales") || "-") : "-";
+  };
+
+  const getProfesor = (idMateria) => {
+    const clase = claseArr.find(str => getCampo(str, "id_materia") === idMateria);
+    if (!clase) return "-";
+    const profEmail = getCampo(clase, "id_profesor");
+    const profObj = Array.isArray(usuariosArr)
+      ? usuariosArr.find(u => u.Email === profEmail && u.Rol === "Docente")
+      : null;
+    return profObj ? profObj.Nombre : "-";
+  };
+
+  // Tabla materias
+  let totalNotas = 0, cantidadNotas = 0;
+  let tablaMaterias = `
+    <table class="student-card-materias-table">
+      <thead>
+        <tr>
+          <th>Materia</th>
+          <th>Profesor</th>
+          <th>Nota</th>
+        </tr>
+      </thead>
+      <tbody>
+  `;
+  materiasArr.forEach(str => {
+    const idMateria = getCampo(str, "id_materia");
+    const nombreMateria = getCampo(str, "nombre");
+    const profesor = getProfesor(idMateria);
+    const nota = parseFloat(getNota(idMateria));
+    if (!isNaN(nota)) {
+      totalNotas += nota;
+      cantidadNotas++;
+    }
+    tablaMaterias += `<tr>
+      <td>${nombreMateria}</td>
+      <td>${profesor}</td>
+      <td>${isNaN(nota) ? "-" : nota}</td>
+    </tr>`;
+  });
+  tablaMaterias += '</tbody></table>';
+  const promedio = cantidadNotas ? (totalNotas / cantidadNotas).toFixed(2) : "-";
+
+  // Ausencias
+  const ausenciasObj = datosArr.find(d => d.tipo === "ausencias");
+  let ausenciasHtml = "";
+  if (ausenciasObj) {
+    const ausenciasData = ausenciasObj.datos.split("\n");
+    const totalAus = ausenciasData.reduce((sum, line) => {
+      const num = parseInt(line.split(":")[1]);
+      return sum + (isNaN(num) ? 0 : num);
+    }, 0);
+    ausenciasHtml = `
+      <div class="student-card-asistencia">
+        <div class="student-card-asistencia-header">Asistencia</div>
+        <div class="student-card-asistencia-body">
+          <p><strong>Total de ausencias:</strong> ${totalAus}</p>
+          <pre>${ausenciasObj.datos}</pre>
+        </div>
+      </div>
+    `;
+  }
+
+  // Comportamiento
+  const comportamientoArr = datosArr.find(d => d.tipo === "comportamiento")?.datos || [];
+  let comportamientoHtml = "";
+  if (comportamientoArr.length > 0) {
+    comportamientoArr.forEach(str => {
+      const fecha = getCampo(str, "Fecha");
+      const tipo = getCampo(str, "Tipo");
+      const descripcion = getCampo(str, "Descripción") || getCampo(str, "Observación");
+      const gravedad = getCampo(str, "Gravedad") || getCampo(str, "Nivel");
+      const docenteEmail = getCampo(str, "Docente Email") || getCampo(str, "Docente");
+      const docenteObj = usuariosArr.find(u => u.Email === docenteEmail);
+      const docenteNombre = docenteObj ? docenteObj.Nombre : "-";
+
+      comportamientoHtml += `
+        <div class="student-card-comportamiento">
+          <div class="student-card-comportamiento-header">
+            <strong>Comportamiento (${tipo || "Registro"})</strong>
+            <span>${fecha || ""}</span>
+          </div>
+          <div class="student-card-comportamiento-body">
+            <p><strong>Docente:</strong> ${docenteNombre}</p>
+            ${gravedad ? `<p><strong>Gravedad:</strong> ${gravedad}</p>` : ""}
+            <p>${descripcion || "Sin detalles"}</p>
+          </div>
+        </div>`;
+    });
+  }
+
+  // Conducta
+  const conductaArr = datosArr.find(d => d.tipo === "conducta")?.datos || [];
+  let conductaHtml = "";
+  conductaArr.forEach(str => {
+    const email = getCampo(str, "Docente guía Email");
+    const nota = getCampo(str, "Nota");
+    const docenteObj = usuariosArr.find(u => u.Email === email);
+    const docenteNombre = docenteObj ? docenteObj.Nombre : "-";
+    conductaHtml += `
+      <div class="student-card-conducta">
+        <div class="student-card-conducta-header">Conducta</div>
+        <div class="student-card-conducta-body">
+          <p><strong>Docente guía:</strong> ${docenteNombre}</p>
+          <p><strong>Nota:</strong> ${nota}</p>
+        </div>
+      </div>`;
+  });
+
+  // Render final con clases específicas
+  vistaDiv.innerHTML = `
+    <div class="student-card-datos">
+      <div class="student-card-datos-header">
+        <h5>Datos del Estudiante</h5>
+      </div>
+      <div class="student-card-datos-body">
+        <p><strong>Cédula:</strong> ${cedula}</p>
+        <p><strong>Nombre:</strong> ${nombreCompleto}</p>
+        <p><strong>Sección:</strong> ${seccion}</p>
+        <p><strong>Correo:</strong> ${correo}</p>
+        <p><strong>Teléfono:</strong> ${telefono}</p>
+      </div>
+    </div>
+    <div class="student-card-materias">
+      <div class="student-card-materias-header">Materias y Rendimiento</div>
+      <div class="student-card-materias-body">
+        ${
+          materiasArr.length
+            ? `${tablaMaterias}<p><strong>Promedio general:</strong> ${promedio}</p>`
+            : `<p>No hay materias o calificaciones registradas.</p>`
+        }
+      </div>
+    </div>
+    ${ausenciasHtml}
+    ${conductaHtml}
+    ${comportamientoHtml}
+    <div class="student-card-cerrar">
+      <button type="button" class="btn btn-secondary btn-sm" id="cerrar-vista-estudiante">Cerrar</button>
+    </div>
+  `;
+
+  // Botón cerrar
+  document.getElementById("cerrar-vista-estudiante").onclick = () => {
+    vistaDiv.style.display = "none";
+    [...moduleContent.children].forEach(child => {
+      if (child !== vistaDiv) child.style.display = "";
+    });
+  };
+}
+
+// Frontend: handler para "Ver" pasa ambos bloques a mostrarVistaEstudiante
+document.addEventListener("click", function (e) {
+  if (e.target.classList.contains("ver-btn")) {
+    const cedula = e.target.dataset.id;
+    showLoader(); // Muestra el spinner
+    google.script.run.withSuccessHandler(res => {
+      mostrarVistaEstudiante(res.datosArr, res.usuariosArr);
+      hideLoader(); // Oculta el spinner
+    }).getStudentDetails(cedula);
+  }
+});
+</script>

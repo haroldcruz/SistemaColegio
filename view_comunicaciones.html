@@ -1,0 +1,68 @@
+<div class="header-main">
+  <h2>Comunicaciones y Avisos 📢</h2>
+</div>
+<div class="module-container">
+  <p class="module-description">Aquí puede consultar todos los comunicados oficiales emitidos por la institución, profesores guía y administradores.</p>
+  
+  <div class="comunicado-list-header">
+    <strong>Asunto</strong>
+    <strong>Fecha de Publicación</strong>
+    <strong>Emisor</strong>
+  </div>
+
+  <div class="comunicado-placeholder">
+    <span class="subject">Aviso de cierre por festivo</span>
+    <span class="date">2025-09-28</span>
+    <span class="sender">Administración</span>
+  </div>
+
+  <div class="comunicado-placeholder">
+    <span class="subject">Reunión de padres de 7-1</span>
+    <span class="date">2025-09-25</span>
+    <span class="sender">Profesor Guía</span>
+  </div>
+  
+  <div class="comunicado-placeholder empty-state" style="margin-top: 30px; text-align: center;">
+    <i class="material-icons" style="font-size: 3em; opacity: 0.5;">inbox</i>
+    <p style="opacity: 0.7;">Los avisos reales se cargarán aquí.</p>
+  </div>
+</div>
+
+<style>
+  /* Estilos básicos para la vista de Comunicaciones */
+  .module-container {
+    padding: 20px;
+    background: var(--dark-blue);
+    border-radius: 8px;
+    color: var(--white-text);
+  }
+  .module-description {
+    margin-bottom: 25px;
+    padding-bottom: 15px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    opacity: 0.8;
+  }
+  .comunicado-list-header {
+    display: grid;
+    grid-template-columns: 2fr 1fr 1fr;
+    padding: 10px 0;
+    border-bottom: 2px solid var(--accent-gold);
+    margin-bottom: 10px;
+  }
+  .comunicado-placeholder {
+    display: grid;
+    grid-template-columns: 2fr 1fr 1fr;
+    padding: 10px 0;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    cursor: pointer;
+    transition: background-color 0.2s;
+  }
+  .comunicado-placeholder:hover {
+    background-color: rgba(255, 255, 255, 0.05);
+  }
+  .comunicado-placeholder span {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+</style>
