@@ -89,32 +89,31 @@ function handleNavigationClick(event) {
   const target = clickedItem?.getAttribute('data-target');
   if (!target) return;
 
-  // activo visual
-  navItems.forEach(item => item.classList.remove('active'));
+  // estado visual
+  navItems.forEach(i => i.classList.remove('active'));
   clickedItem.classList.add('active');
 
   // título
   const header = document.querySelector('.header-main h2');
   if (header) {
-    header.textContent = target === 'students'
-      ? 'Alumnos'
+    header.textContent = target === 'students' ? 'Alumnos'
       : target.charAt(0).toUpperCase() + target.slice(1).replace('-', ' ');
   }
 
   if (target === 'dashboard') {
-    // mostrar dashboard
     dashboardContainer.style.display = 'grid';
     dashboardContainer.classList.add('show-content');
     moduleContent.innerHTML = '';
     return;
   }
 
-  // ocultar dashboard y cargar módulo
+  // 🔹 limpiar y preparar vista ANTES de cargar
   dashboardContainer.style.display = 'none';
   dashboardContainer.classList.remove('show-content');
-  showLoader();
+  moduleContent.innerHTML = '';          // ← evita que se vea la tabla anterior
+  showLoader();                          // ← muestra loader de inmediato
 
-  // Router local (sin loadModule ni view_*.html)
+  // router local
   switch (target) {
     case 'students':
       showStudentsModule();
@@ -125,20 +124,12 @@ function handleNavigationClick(event) {
     case 'subjects':
       showMateriasModule();
       break;
-    case 'evaluations':
-    case 'behavior':
-    case 'users':
-    case 'guardians':
-    case 'comunicaciones':
-    case 'justificaciones':
-      hideLoader();
-      moduleContent.innerHTML = '<div style="padding:12px;">Módulo no implementado aún.</div>';
-      break;
     default:
       hideLoader();
-      moduleContent.innerHTML = '<div style="padding:12px;">Destino desconocido.</div>';
+      moduleContent.innerHTML = '<div style="padding:12px;">Módulo no implementado.</div>';
   }
 }
+
 
 function attachEventListeners() {
   navItems.forEach(item => item.addEventListener('click', handleNavigationClick));
