@@ -1,0 +1,205 @@
+<!-- css_carga_academica.html -->
+<style>
+/* =========================================================
+   TABLA DE CARGA ACADÉMICA
+   ========================================================= */
+.carga-academica-table {
+  width: 100%;
+  border-collapse: collapse;
+  background: var(--dark-blue);
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(22, 40, 64, 0.14);
+}
+
+.carga-academica-table th,
+.carga-academica-table td {
+  padding: 0.75rem 1rem;
+  text-align: left;
+}
+
+.carga-academica-table th {
+  background: var(--light-dark-blue);
+  color: var(--accent-gold);
+  letter-spacing: 0.05em;
+  font-size: 1rem;
+}
+
+.carga-academica-table tbody tr {
+  border-bottom: 1px solid #20416a;
+  transition: background 0.2s;
+}
+
+.carga-academica-table tbody tr:hover {
+  background: #1f3e72cc;
+}
+
+.carga-academica-table td {
+  color: var(--white-text);
+  font-size: 0.95rem;
+}
+
+/* =========================================================
+   MENSAJE SIN DATOS
+   ========================================================= */
+.no-data-carga {
+  text-align: center;
+  color: var(--accent-gold);
+  background: var(--dark-blue);
+  padding: 2rem;
+  border-radius: 8px;
+  font-size: 1.1rem;
+}
+
+/* =========================================================
+   BOTONES DE ACCIÓN
+   ========================================================= */
+.carga-academica-table button {
+  background: var(--accent-gold);
+  color: var(--dark-blue);
+  border: none;
+  border-radius: 6px;
+  padding: 0.4rem 0.9rem;
+  margin-right: 0.3em;
+  font-weight: bold;
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s;
+}
+
+.carga-academica-table button:hover {
+  background: var(--white-text);
+  color: var(--accent-gold);
+  box-shadow: 0 0 8px var(--accent-gold);
+}
+
+/* =========================================================
+   FORMULARIO AGREGAR / EDITAR
+   ========================================================= */
+.carga-form-container {
+  background: var(--light-gray-bg);
+  color: var(--white-text);
+  padding: 24px;
+  border-radius: 10px;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.25);
+  max-width: 600px;
+  margin: 25px auto;
+  font-family: 'Segoe UI', sans-serif;
+}
+
+.carga-form-container h3 {
+  text-align: center;
+  color: var(--accent-gold);
+  margin-bottom: 20px;
+  letter-spacing: 0.5px;
+}
+
+.carga-form label {
+  font-weight: 600;
+  color: var(--accent-gold);
+  margin-top: 10px;
+  display: block;
+}
+
+.carga-form select {
+  width: 100%;
+  padding: 8px 10px;
+  border: 1px solid var(--accent-gold);
+  border-radius: 6px;
+  background-color: var(--white-text);
+  color: var(--dark-blue);
+  font-size: 14px;
+  outline: none;
+  transition: border-color 0.2s ease-in-out;
+}
+
+.carga-form select:focus {
+  border-color: var(--light-dark-blue);
+}
+
+/* =========================================================
+   BOTONES DEL FORMULARIO
+   ========================================================= */
+.carga-form .form-buttons {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 20px;
+}
+
+.carga-form .btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 18px;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 15px;
+  transition: all 0.2s ease-in-out;
+}
+
+/* Botón guardar en azul oscuro */
+.carga-form .btn.btn-success {
+  background-color: var(--light-dark-blue);
+  color: var(--white-text);
+}
+.carga-form .btn.btn-success:hover {
+  background-color: var(--dark-blue);
+}
+
+/* Botón cancelar en dorado */
+.carga-form .btn.btn-secondary {
+  background-color: var(--accent-gold);
+  color: var(--dark-blue);
+}
+.carga-form .btn.btn-secondary:hover {
+  filter: brightness(0.9);
+}
+
+/* =========================================================
+   ENCABEZADO DEL MÓDULO
+   ========================================================= */
+#carga-academica-module h3 {
+  color: var(--accent-gold);
+  font-size: 1.4em;
+  margin-bottom: 16px;
+  text-align: center;
+}
+
+/* Botón agregar */
+#add-carga-btn {
+  background-color: #2196f3;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  padding: 8px 14px;
+  font-size: 14px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  margin-bottom: 12px;
+}
+
+#add-carga-btn:hover {
+  background-color: #1976d2;
+}
+
+/* =========================================================
+   ADAPTACIÓN RESPONSIVA
+   ========================================================= */
+@media (max-width: 700px) {
+  .carga-form-container {
+    width: 90%;
+    padding: 16px;
+  }
+  .carga-academica-table th,
+  .carga-academica-table td {
+    font-size: 0.9rem;
+    padding: 0.5rem 0.7rem;
+  }
+  #add-carga-btn {
+    width: 100%;
+  }
+}
+
+
+</style>

@@ -1,0 +1,95 @@
+<script>
+// Frontend: reemplaza campo Sección por <select> precargado y llama a asignarEstudianteASeccion
+// Uso: invocar openEditStudentWithSection(studentObj)
+// studentObj debe contener al menos { Cedula?, Correo?, Email?, Sección? , Nombre? }
+
+function openEditStudentWithSection(studentObj) {
+  const module = document.getElementById('module-content');
+  // Crear área de edición (remplaza/inyecta)
+  const editDiv = document.createElement('div');
+  editDiv.id = 'edit-student-section';
+  editDiv.innerHTML = `
+    <div class="module-container">
+      <h3>Editar estudiante: ${studentObj.Nombre || ''}</h3>
+      <div id="edit-student-loader" style="text-align:center;"><div class="spinner"></div><span>Cargando secciones...</span></div>
+      <form id="edit-student-form" style="display:none;">
+        <label>Sección:</label>
+        <select id="edit_id_seccion" required><option value="">-</option></select>
+        <div style="margin-top:12px;">
+          <button type="button" id="save-student-section-btn" class="btn btn-success btn-sm">Guardar</button>
+          <button type="button" id="cancel-student-section-btn" class="btn btn-secondary btn-sm">Cancelar</button>
+        </div>
+      </form>
+    </div>
+  `;
+  // ocultar listado actual y mostrar el form
+  [...module.children].forEach(c => c.style.display = 'none');
+  module.appendChild(editDiv);
+
+  // Precargar secciones
+  google.script.run.withSuccessHandler(function(lista) {
+    const sel = document.getElementById('edit_id_seccion');
+    sel.innerHTML = '<option value="">-</option>' + lista.map(s=>
+      `<option value="${s.id_seccion}">${s.Nivel} ${s.Grupo} ${s.Subgrupo}</option>`
+    ).join('');
+    // seleccionar sección actual si existe
+    const current = studentObj.Sección || studentObj.Seccion || '';
+    if (current) {
+      for (const opt of sel.options) {
+        if (opt.value == current) { opt.selected = true; break; }
+      }
+    }
+    document.getElementById('edit-student-loader').style.display = 'none';
+    document.getElementById('edit-student-form').style.display = 'block';
+  }).getSeccionesList();
+
+  // Botones
+  document.getElementById('cancel-student-section-btn').onclick = function() {
+    editDiv.remove();
+    // restaurar vistas previas
+    [...module.children].forEach(c => c.style.display = '');
+  };
+
+  document.getElementById('save-student-section-btn').onclick = function() {
+    const nueva = document.getElementById('edit_id_seccion').value;
+    if (!nueva) { alert('Seleccione una sección válida'); return; }
+
+    // Si no cambió, simplemente cerrar y no llamar backend
+    const actual = studentObj.Sección || studentObj.Seccion || '';
+    if (String(actual) == String(nueva)) {
+      editDiv.remove();
+      [...module.children].forEach(c => c.style.display = '');
+      return;
+    }
+
+    if (!confirm(`Confirmar traslado de sección: ${actual || '(sin)' } → ${nueva}`)) return;
+
+    // Identificadores: preferir cédula si existe, sino correo/email
+    const payload = { nuevaSeccion: nueva };
+    if (studentObj['Cédula'] || studentObj['Cedula']) {
+      payload.cedula = studentObj['Cédula'] || studentObj['Cedula'];
+    } else if (studentObj.Correo || studentObj.Email) {
+      payload.email = studentObj.Correo || studentObj.Email;
+    } else {
+      alert('No hay identificador (Cédula/Email) del estudiante.');
+      return;
+    }
+
+    showLoader();
+    google.script.run.withSuccessHandler(function(res){
+      hideLoader();
+      if (res && res.success) {
+        alert(res.message || 'Sección actualizada');
+        // cerrar form y recargar listado
+        editDiv.remove();
+        showStudentsModule(); // asume que existe esta función para recargar
+      } else {
+        alert(res.error || 'Error al actualizar sección');
+      }
+    }).withFailureHandler(function(){
+      hideLoader();
+      alert('Error en la llamada al servidor');
+    }).asignarEstudianteASeccion(payload);
+  };
+}
+</script>

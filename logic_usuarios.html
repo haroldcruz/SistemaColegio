@@ -1,0 +1,171 @@
+<!-- logic_usuarios.html -->
+<script>
+// ====== MÓDULO CRUD DE USUARIOS ======
+
+function showUsuariosModule() {
+  document.querySelector('.dashboard-container').style.display = 'none';
+  showLoader();
+
+  google.script.run
+    .withSuccessHandler(function(usuarios) {
+      hideLoader();
+      renderUsuariosTable(usuarios);
+    })
+    .withFailureHandler(function() {
+      hideLoader();
+      alert("Error al cargar usuarios");
+    })
+    .getUsuariosData();
+}
+
+function renderUsuariosTable(usuarios) {
+  const module = document.getElementById('module-content');
+  google.script.run.withSuccessHandler(function(user){
+    const puede = (user.role || '').toLowerCase() === 'administrador';
+    const addBtn = puede ? `<button id="add-usuario-btn" class="btn btn-success btn-sm">Agregar usuario</button>` : '';
+    module.innerHTML = `
+      <div id="usuarios-module">
+        <h3>Gestión de Usuarios</h3>
+        ${addBtn}
+        <div class="table-responsive">
+          <table class="table usuarios-table">
+            <thead>
+              <tr>
+                <th>Email</th>
+                <th>Nombre</th>
+                <th>Rol</th>
+                <th>Acceso</th>
+                ${puede ? "<th>Acciones</th>" : ""}
+              </tr>
+            </thead>
+            <tbody>
+              ${(usuarios || []).map(u => `
+                <tr data-id="${u.Email}">
+                  <td>${u.Email}</td>
+                  <td>${u.Nombre}</td>
+                  <td>${u.Rol}</td>
+                  <td>${u.Acceso}</td>
+                  ${puede ? `
+                    <td>
+                      <button class="btn btn-warning btn-sm editar-usuario-btn">Editar</button>
+                      <button class="btn btn-danger btn-sm eliminar-usuario-btn">Eliminar</button>
+                    </td>` : ""}
+                </tr>
+              `).join("")}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    `;
+  }).getUserRole();
+}
+
+// ====== FORMULARIO AGREGAR/EDITAR ======
+function mostrarFormularioUsuario(modo, data = {}) {
+  const module = document.getElementById('module-content');
+  module.style.display = 'none';
+
+  const formDiv = document.createElement('div');
+  formDiv.id = 'usuario-form-section';
+  formDiv.innerHTML = `
+    <div class="usuario-form-container">
+      <h3>${modo === 'editar' ? 'Editar usuario' : 'Agregar nuevo usuario'}</h3>
+      <form id="usuario-form">
+        <label>Email:</label>
+        <input type="email" id="email" ${modo === 'editar' ? "readonly" : ""} value="${data.Email || ''}" required>
+        <label>Nombre:</label>
+        <input type="text" id="nombre" value="${data.Nombre || ''}" required>
+        <label>Rol:</label>
+        <select id="rol" required>
+          ${['Administrador','Docente','Encargado'].map(r => 
+            `<option value="${r}"${r === data.Rol ? " selected" : ""}>${r}</option>`).join("")}
+        </select>
+        <label>Acceso:</label>
+        <input type="text" id="acceso" value="${data.Acceso || ''}" readonly>
+        <div class="form-buttons">
+          <button type="button" id="guardar-usuario-btn" class="btn btn-success btn-sm">
+            ${modo === 'editar' ? 'Actualizar' : 'Guardar'}
+          </button>
+          <button type="button" id="cancelar-usuario-btn" class="btn btn-secondary btn-sm">Cancelar</button>
+        </div>
+      </form>
+    </div>
+  `;
+  module.parentNode.insertBefore(formDiv, module.nextSibling);
+
+  document.getElementById('guardar-usuario-btn').onclick = function() { guardarUsuario(modo); };
+  document.getElementById('cancelar-usuario-btn').onclick = function() { formDiv.remove(); module.style.display = 'block'; };
+}
+
+// ====== CRUD ======
+function guardarUsuario(modo) {
+  const data = {
+    Email: document.getElementById('email').value.trim(),
+    Nombre: document.getElementById('nombre').value.trim(),
+    Rol: document.getElementById('rol').value,
+    Acceso: document.getElementById('acceso').value.trim()
+  };
+  if (!data.Email || !data.Nombre || !data.Rol ){
+    alert("Complete todos los campos");
+    return;
+  }
+  showLoader();
+  const cb = function(res) {
+    hideLoader();
+    if (res.success) {
+      alert(res.message);
+      document.getElementById('usuario-form-section').remove();
+      document.getElementById('module-content').style.display = 'block';
+      showUsuariosModule();
+    } else {
+      alert(res.error || 'Error en la operación');
+    }
+  };
+
+  if (modo === 'editar') {
+    google.script.run.withSuccessHandler(cb)
+      .withFailureHandler(()=>{ hideLoader(); alert('Error'); })
+      .editarUsuarioGS(data);
+  } else {
+    google.script.run.withSuccessHandler(cb)
+      .withFailureHandler(()=>{ hideLoader(); alert('Error'); })
+      .agregarUsuarioGS(data);
+  }
+}
+
+// ====== EVENTOS ======
+document.addEventListener('click', function(e) {
+  if (e.target && e.target.id === 'add-usuario-btn') {
+    mostrarFormularioUsuario('agregar');
+    return;
+  }
+  if (e.target && e.target.classList.contains('editar-usuario-btn')) {
+    const row = e.target.closest('tr');
+    const data = {
+      Email: row.children[0].textContent,
+      Nombre: row.children[1].textContent,
+      Rol: row.children[2].textContent,
+      Acceso: row.children[3].textContent
+    };
+    mostrarFormularioUsuario('editar', data);
+    return;
+  }
+  if (e.target && e.target.classList.contains('eliminar-usuario-btn')) {
+    const email = e.target.closest('tr').dataset.id;
+    if (confirm('¿Eliminar este usuario permanentemente?')) {
+      showLoader();
+      google.script.run
+        .withSuccessHandler(function(res) {
+          hideLoader();
+          alert(res.message || 'Eliminado');
+          showUsuariosModule();
+        })
+        .withFailureHandler(function() {
+          hideLoader();
+          alert('Error al eliminar');
+        })
+        .eliminarUsuarioGS(email);
+    }
+  }
+});
+</script>

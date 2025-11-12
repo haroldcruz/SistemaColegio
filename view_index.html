@@ -8,12 +8,16 @@
   <?!= include('css_student') ?>
   <?!= include('css_sections') ?>
   <?!= include('css_materias') ?>
+  <?!= include('css_usuarios') ?>
+  <?!= include('css_carga_academica') ?>
 </head>
+
 <!-- Bloqueo total: overlay con spinner -->
-      <div id="loader" class="loader-container">
-        <div class="spinner"></div>
-        <p>Cargando información</p>
-      </div>
+<div id="loader" class="loader-container">
+  <div class="spinner"></div>
+  <p>Cargando información</p>
+</div>
+
 <body>
   <div class="main-container">
     <!-- SIDEBAR -->
@@ -32,6 +36,8 @@
       <div id="sidebar-mobile" class="sidebar hidden">
         <!-- Aquí va tu menú lateral -->
       </div>
+
+      <!-- NAV: mantener todos los enlaces dentro del <nav> -->
       <div id="sidebar-menu-wrapper">
         <nav class="sidebar-nav">
           <a href="#" class="nav-item active home-nav-item" data-target="dashboard">
@@ -40,12 +46,21 @@
           <a href="#" class="nav-item sections-nav-item" data-target="sections">
             <i class="material-icons">groups</i><span>Grupos/Secciones</span>
           </a>
+          <a href="#" class="nav-item cargaacademica-nav-item" data-target="carga-academica">
+            <i class="material-icons">badge</i><span>Carga Académica</span>
+          </a>
           <a href="#" class="nav-item students-nav-item" data-target="students">
             <i class="material-icons">school</i><span>Estudiantado</span>
           </a>
           <a href="#" class="nav-item subjects-nav-item" data-target="subjects">
             <i class="material-icons">assignment</i><span>Materias</span>
           </a>
+
+          <!-- CORRECTO: enlace del módulo Asignar Secciones dentro del nav -->
+          <a href="#" class="nav-item assign-students-nav-item" data-target="assign-students">
+            <i class="material-icons">group_add</i><span>Asignar Secciones</span>
+          </a>
+
           <a href="#" class="nav-item evaluations-nav-item" data-target="evaluations">
             <i class="material-icons">note_add</i><span>Evaluaciones</span>
           </a>
@@ -55,8 +70,8 @@
           <a href="#" class="nav-item users-nav-item" data-target="users">
             <i class="material-icons">person</i><span>Usuarios</span>
           </a>
-          <a href="#" class="nav-item guardians-nav-item" data-target="guardians">
-            <i class="material-icons">security</i><span>Encargados</span>
+          <a href="#" class="nav-item guardians-nav-item" data-target="carga-academica">
+            <i class="material-icons">content_paste</i><span>Carga Académica</span>
           </a>
           <a href="#" class="nav-item communications-nav-item" data-target="comunicaciones">
             <i class="material-icons">email</i><span>Comunicaciones</span>
@@ -112,15 +127,19 @@
       </div>
     </div>
   </div>
+
   <?!= include('logic_main') ?>
   <?!= include('logic_students') ?>
-  // En el archivo .html donde generas la tabla, agrega:
   <?!= include('logic_student_view') ?>
   <?!= include('logic_student_edit') ?>
-   <?!= include('logic_student_create') ?>
-    <?!= include('logic_student_delete') ?>
-    <?!= include('logic_sections') ?>
-    <?!= include('logic_materias') ?>
+  <?!= include('logic_student_create') ?>
+  <?!= include('logic_student_delete') ?>
+  <?!= include('logic_sections') ?>
+  <?!= include('logic_materias') ?>
+  <?!= include('logic_usuarios') ?>
+  <?!= include('logic_carga_academica') ?>
+  <?!= include('logic_assign_students') ?>
+
   <!-- PapaParse (CSV) -->
   <script src="https://cdn.jsdelivr.net/npm/papaparse@5.3.2/papaparse.min.js"></script>
   <!-- SheetJS (XLSX) -->

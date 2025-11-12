@@ -85,3 +85,126 @@ function actualizarAccesoUsuario(usuariosSheet, correo, cedula, accion) {
     throw e;
   }
 }
+
+    // -G´DIGO NUEVO CUALQUIER COSA ELIMINAR LO QUE ESTA ARRIBA
+    // ------------------------------------------------------
+
+// backend_usuarios.js
+// CRUD de Usuarios, hoja: "Usuarios", columnas: Email | Nombre | Rol | Acceso
+
+function _canManageUsuarios_() {
+  // Solo administrador puede editar usuarios
+  const u = getUserRole();
+  return (u.role || '').toLowerCase() === 'administrador';
+}
+
+// Listar usuarios
+function getUsuariosData() {
+  try {
+    const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
+    const sh = ss.getSheetByName('Usuarios');
+    if (!sh) throw new Error("Hoja 'Usuarios' no encontrada");
+
+    const data = sh.getDataRange().getValues();
+    const headers = data[0].map(h => String(h).trim());
+    const emailIdx = headers.indexOf('Email');
+    const nombreIdx = headers.indexOf('Nombre');
+    const rolIdx = headers.indexOf('Rol');
+    const accesoIdx = headers.indexOf('Acceso');
+    if (emailIdx == -1 || nombreIdx == -1 || rolIdx == -1 || accesoIdx == -1) throw new Error("Encabezados inválidos");
+
+    return data.slice(1)
+      .filter(r => r[emailIdx])
+      .map(r => ({
+        Email: r[emailIdx],
+        Nombre: r[nombreIdx],
+        Rol: r[rolIdx],
+        Acceso: r[accesoIdx]
+      }));
+  } catch (e) {
+    Logger.log("getUsuariosData: " + e.message);
+    return [];
+  }
+}
+
+// Crear usuario
+function agregarUsuarioGS(data) {
+  try {
+    if (!_canManageUsuarios_()) return { success: false, error: "No autorizado" };
+    const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
+    const sh = ss.getSheetByName('Usuarios');
+    if (!sh) throw new Error("Hoja 'Usuarios' no encontrada");
+
+    const existentes = getUsuariosData();
+    // Email único
+    if (existentes.some(u => String(u.Email).toLowerCase() === String(data.Email).toLowerCase())) {
+      return { success: false, error: "Ya existe un usuario con ese email" };
+    }
+    // Rol válido
+    const rolesValidos = ['Administrador','Docente','Encargado'];
+    if (!rolesValidos.includes(data.Rol)) {
+      return { success: false, error: "Rol inválido" };
+    }
+    sh.appendRow([data.Email, data.Nombre, data.Rol, data.Acceso]);
+    return { success: true, message: "Usuario agregado correctamente" };
+  } catch (e) {
+    Logger.log("agregarUsuarioGS: " + e.message);
+    return { success: false, error: e.message };
+  }
+}
+
+// Editar usuario
+function editarUsuarioGS(data) {
+  try {
+    if (!_canManageUsuarios_()) return { success: false, error: "No autorizado" };
+    const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
+    const sh = ss.getSheetByName('Usuarios');
+    if (!sh) throw new Error("Hoja 'Usuarios' no encontrada");
+
+    const values = sh.getDataRange().getValues();
+    const headers = values[0].map(h => String(h).trim());
+    const emailIdx = headers.indexOf('Email');
+    const nombreIdx = headers.indexOf('Nombre');
+    const rolIdx = headers.indexOf('Rol');
+    const accesoIdx = headers.indexOf('Acceso');
+    if (emailIdx == -1) throw new Error("Encabezados inválidos");
+
+    const rowIdx = values.findIndex(r => String(r[emailIdx]).toLowerCase() === String(data.Email).toLowerCase());
+    if (rowIdx <= 0) return { success: false, error: "Usuario no encontrado" };
+    // Rol válido
+    const rolesValidos = ['Administrador','Docente','Encargado'];
+    if (!rolesValidos.includes(data.Rol)) {
+      return { success: false, error: "Rol inválido" };
+    }
+    sh.getRange(rowIdx + 1, nombreIdx + 1).setValue(data.Nombre);
+    sh.getRange(rowIdx + 1, rolIdx + 1).setValue(data.Rol);
+    sh.getRange(rowIdx + 1, accesoIdx + 1).setValue(data.Acceso);
+    return { success: true, message: "Usuario actualizado correctamente" };
+  } catch (e) {
+    Logger.log("editarUsuarioGS: " + e.message);
+    return { success: false, error: e.message };
+  }
+}
+
+// Eliminar usuario
+function eliminarUsuarioGS(email) {
+  try {
+    if (!_canManageUsuarios_()) return { success: false, error: "No autorizado" };
+
+    const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
+    const sh = ss.getSheetByName('Usuarios');
+    if (!sh) throw new Error("Hoja 'Usuarios' no encontrada");
+    const values = sh.getDataRange().getValues();
+    const headers = values[0].map(h => String(h).trim());
+    const emailIdx = headers.indexOf('Email');
+    if (emailIdx == -1) throw new Error("Encabezados inválidos");
+
+    const rowIdx = values.findIndex(r => String(r[emailIdx]).toLowerCase() === String(email).toLowerCase());
+    if (rowIdx <= 0) return { success: false, error: "Usuario no encontrado" };
+    sh.deleteRow(rowIdx + 1);
+    return { success: true, message: "Usuario eliminado correctamente" };
+  } catch (e) {
+    Logger.log("eliminarUsuarioGS: " + e.message);
+    return { success: false, error: e.message };
+  }
+}

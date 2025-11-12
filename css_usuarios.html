@@ -1,0 +1,74 @@
+<!-- Estilos módulo usuarios -->
+<style>
+#usuarios-module {
+  background: var(--dark-blue);
+  color: var(--white-text);
+  padding: 16px;
+  border-radius: 8px;
+  max-width: 900px;
+  margin: 0 auto;
+}
+#usuarios-module h3 {
+  margin: 0 0 12px 0;
+  font-weight: 600;
+  border-bottom: 2px solid var(--accent-gold);
+  padding-bottom: 8px;
+  text-align: center;
+}
+.table-responsive { width: 100%; overflow-x: auto; }
+.table.usuarios-table {
+  width: 100%;
+  border-collapse: collapse;
+  background: rgba(255,255,255,0.02);
+  border-radius: 8px;
+}
+.table.usuarios-table thead th, .table.usuarios-table tbody td {
+  text-align: left;
+  padding: 10px 12px;
+  border-bottom: 1px solid rgba(255,255,255,0.08);
+  font-weight: 600;
+}
+.table.usuarios-table tbody tr:hover {
+  background: rgba(255,255,255,0.05);
+}
+.usuario-form-container {
+  background: var(--dark-blue);
+  color: var(--white-text);
+  padding: 20px;
+  border-radius: 10px;
+  margin-top: 20px;
+  border: 2px solid var(--accent-gold);
+  max-width: 600px;
+  margin-left: auto;
+  margin-right: auto;
+  box-shadow: 0 0 8px rgba(0,0,0,0.3);
+}
+.usuario-form-container h3 {
+  margin-top: 0;
+  border-bottom: 2px solid var(--accent-gold);
+  padding-bottom: 8px;
+  font-weight: 600;
+  text-align: center;
+}
+.usuario-form-container label {
+  display: block;
+  margin: 10px 0 4px;
+  font-size: 0.9rem;
+  opacity: 0.9;
+}
+.usuario-form-container input, .usuario-form-container select {
+  width: 100%;
+  padding: 8px 10px;
+  border-radius: 6px;
+  border: 1px solid rgba(255,255,255,0.2);
+  background: #fff;
+  color: #000;
+}
+.form-buttons {
+  margin-top: 14px;
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+}
+.btn { cursor: pointer; border: 0; border-radius: 6px; padding: 6px 10px; }
+</style>

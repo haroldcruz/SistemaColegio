@@ -1,4 +1,4 @@
-<!-- logic_main.html (router central unificado) -->
+// logic_main.html (router central unificado) - modificado para exponer "assign-students"
 <script>
 // Script principal del dashboard
 // Gestiona la carga inicial, navegación y control de roles
@@ -97,6 +97,7 @@ function handleNavigationClick(event) {
   const header = document.querySelector('.header-main h2');
   if (header) {
     header.textContent = target === 'students' ? 'Alumnos'
+      : target === 'assign-students' ? 'Asignar Secciones'
       : target.charAt(0).toUpperCase() + target.slice(1).replace('-', ' ');
   }
 
@@ -123,6 +124,21 @@ function handleNavigationClick(event) {
       break;
     case 'subjects':
       showMateriasModule();
+      break;
+    case 'users':
+      showUsuariosModule();
+      break;
+    case 'carga-academica':
+      showCargaAcademicaModule();
+      break;
+    case 'assign-students':
+      // Llamada segura al módulo de asignación de estudiantes (frontend)
+      if (typeof showAssignStudentsModule === 'function') {
+        showAssignStudentsModule();
+      } else {
+        hideLoader();
+        moduleContent.innerHTML = '<div style="padding:12px;color:var(--white-text)">Módulo "Asignar Secciones" no cargado.</div>';
+      }
       break;
     default:
       hideLoader();
@@ -167,7 +183,8 @@ function initializeDashboard(userData) {
     case 'administrador':
     case 'secretaria':
       visibleCards = ['users-card', 'students-card', 'subjects-card', 'guardians-card', 'evaluations-card', 'behavior-card', 'sections-card'];
-      visibleNavItems.push('.sections-nav-item', '.students-nav-item', '.subjects-nav-item', '.evaluations-nav-item', '.behavior-nav-item', '.users-nav-item', '.guardians-nav-item', '.communications-nav-item', '.justifications-nav-item');
+      // Se añade .assign-students-nav-item para que el enlace sea visible a admin/secretaria
+      visibleNavItems.push('.sections-nav-item', '.students-nav-item', '.subjects-nav-item', '.evaluations-nav-item', '.behavior-nav-item', '.users-nav-item', '.guardians-nav-item', '.communications-nav-item', '.justifications-nav-item', '.assign-students-nav-item');
       break;
     case 'docente':
     case 'profesor':

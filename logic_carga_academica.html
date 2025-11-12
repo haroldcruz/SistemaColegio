@@ -1,0 +1,232 @@
+<script>
+// =============================================================
+// FRONTEND CARGA ACADÉMICA
+// =============================================================
+
+// Muestra módulo
+function showCargaAcademicaModule() {
+  hideOtherModules();
+  showLoader();
+  document.querySelector('.dashboard-container').style.display = 'none';
+  document.getElementById('module-content').style.display = 'block';
+
+  google.script.run
+    .withSuccessHandler(function(rows){
+      hideLoader();
+      renderCargaAcademicaTable(rows);
+    })
+    .withFailureHandler(function(){
+      hideLoader();
+      alert('Error al cargar carga académica');
+    })
+    .getCargaAcademicaData();
+}
+
+// Render tabla (muestra NOMBRE de docente, materia y sección)
+function renderCargaAcademicaTable(rows){
+  const m = document.getElementById('module-content');
+  m.innerHTML = `
+    <div id="carga-academica-module">
+      <h3>Gestión de Carga Académica</h3>
+      <button id="add-carga-btn" class="btn btn-success btn-sm">Agregar asignación</button>
+      <div class="table-responsive">
+        <table class="table carga-academica-table">
+          <thead>
+            <tr>
+              <th>Docente</th>
+              <th>Materia</th>
+              <th>Sección</th>
+              <th>Ciclo</th>
+              <th>Tipo Asignación</th>
+              <th>Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${rows.length ? rows.map(a => `
+              <tr data-email="${a.Email}" data-seccion="${a.id_seccion}" data-ciclo="${a.Ciclo}">
+                <td>${a.DocenteNombre || a.Email}</td>
+                <td>${a.MateriaNombre || a.id_materia}</td>
+                <td>${a.SeccionNombre || a.id_seccion}</td>
+                <td>${a.Ciclo}</td>
+                <td>${a.TipoAsignacion || ''}</td>
+                <td>
+                  <button class="btn btn-warning btn-sm editar-carga-btn">Editar</button>
+                  <button class="btn btn-danger btn-sm eliminar-carga-btn">Eliminar</button>
+                </td>
+              </tr>`).join('') :
+              `<tr><td colspan="6" class="no-data-carga">Sin asignaciones registradas</td></tr>`
+            }
+          </tbody>
+        </table>
+      </div>
+    </div>`;
+}
+
+// Abre formulario (agregar/editar)
+function mostrarFormularioCarga(modo, data = {}) {
+  const module = document.getElementById('module-content');
+  module.style.display = 'none';
+
+  const formDiv = document.createElement('div');
+  formDiv.id = 'carga-form-section';
+  formDiv.dataset.originalEmail   = data.Email   || '';
+  formDiv.dataset.originalSeccion = data.id_seccion || '';
+  formDiv.dataset.originalCiclo   = data.Ciclo   || '';
+
+  formDiv.innerHTML = `
+    <div class="carga-form-container">
+      <h3>${modo==='editar'?'Editar asignación':'Agregar nueva asignación'}</h3>
+      <form id="carga-form" class="carga-form">
+        <label>Docente:</label>
+        <select id="email" class="select-docente" required></select>
+
+        <label>Materia:</label>
+        <select id="id_materia" class="select-materia" required></select>
+
+        <label>Sección:</label>
+        <select id="id_seccion" class="select-seccion" required></select>
+
+        <label>Ciclo:</label>
+        <select id="ciclo" class="select-ciclo" required></select>
+
+        <label>Tipo Asignación:</label>
+        <select id="tipo_asignacion" class="select-tipo">
+          <option value="Regular">Regular</option>
+          <option value="Suplencia">Suplencia</option>
+        </select>
+
+        <div class="form-buttons">
+          <button type="button" id="guardar-carga-btn" class="btn btn-success btn-sm">
+            ${modo==='editar'?'Actualizar':'Guardar'}
+          </button>
+          <button type="button" id="cancelar-carga-btn" class="btn btn-secondary btn-sm">Cancelar</button>
+        </div>
+      </form>
+    </div>`;
+  module.parentNode.insertBefore(formDiv, module.nextSibling);
+
+  showLoader();
+  google.script.run
+    .withSuccessHandler(function(lists){
+      hideLoader();
+      fillSelect('email',      lists.docentes,   'Email',      'Nombre');
+      fillSelect('id_materia', lists.materias,   'id_materia', 'Nombre');
+      fillSelect('id_seccion', lists.secciones,  'id_seccion', 'Nombre');
+      fillSelect('ciclo',      lists.ciclos,     'Ciclo',      'Ciclo');
+
+      preselectOrAppend('email', data.Email);
+      preselectOrAppend('id_materia', data.id_materia);
+      preselectOrAppend('id_seccion', data.id_seccion, data.SeccionNombre || data.id_seccion);
+      preselectOrAppend('ciclo', data.Ciclo, data.Ciclo);
+
+      document.getElementById('tipo_asignacion').value = data.TipoAsignacion || 'Regular';
+    })
+    .withFailureHandler(function(){
+      hideLoader();
+      alert('Error al cargar listas');
+    })
+    .getCargaAcademicaLists();
+
+  document.getElementById('guardar-carga-btn').onclick = () => guardarCarga(modo);
+  document.getElementById('cancelar-carga-btn').onclick = () => {
+    formDiv.remove();
+    module.style.display = 'block';
+  };
+}
+
+// Guarda (agrega/edita)
+function guardarCarga(modo){
+  const formDiv = document.getElementById('carga-form-section');
+  const payload = {
+    Email:        document.getElementById('email').value,
+    id_materia:   document.getElementById('id_materia').value,
+    id_seccion:   document.getElementById('id_seccion').value,
+    Ciclo:        document.getElementById('ciclo').value,
+    TipoAsignacion: document.getElementById('tipo_asignacion').value
+  };
+  if (!payload.Email || !payload.id_materia || !payload.id_seccion || !payload.Ciclo){
+    alert('Complete todos los campos obligatorios'); return;
+  }
+
+  if (modo === 'editar') {
+    payload._originalKey = {
+      Email:    formDiv.dataset.originalEmail,
+      id_seccion: formDiv.dataset.originalSeccion,
+      Ciclo:    formDiv.dataset.originalCiclo
+    };
+  }
+
+  showLoader();
+  const cb = res => {
+    hideLoader();
+    if (!res || !res.success) { alert(res?.message || 'Falló el proceso'); return; }
+    alert(res.message || 'OK');
+    formDiv.remove();
+    document.getElementById('module-content').style.display = 'block';
+    showCargaAcademicaModule();
+  };
+
+  const call = (modo==='editar')
+    ? google.script.run.withSuccessHandler(cb).withFailureHandler(()=>{hideLoader();alert('Error');}).editarCargaAcademicaGS
+    : google.script.run.withSuccessHandler(cb).withFailureHandler(()=>{hideLoader();alert('Error');}).agregarCargaAcademicaGS;
+
+  call(payload);
+}
+
+// Eventos tabla
+document.addEventListener('click', e=>{
+  if (e.target && e.target.id==='add-carga-btn'){
+    mostrarFormularioCarga('agregar');
+    return;
+  }
+  if (e.target && e.target.classList.contains('editar-carga-btn')){
+    const tr = e.target.closest('tr');
+    const data = {
+      Email: tr.dataset.email,
+      id_materia: tr.children[1].textContent.trim(),
+      id_seccion: tr.dataset.seccion,
+      Ciclo: tr.dataset.ciclo,
+      TipoAsignacion: tr.children[4].textContent.trim()
+    };
+    mostrarFormularioCarga('editar', data);
+    return;
+  }
+  if (e.target && e.target.classList.contains('eliminar-carga-btn')){
+    const tr = e.target.closest('tr');
+    const key = { Email: tr.dataset.email, id_seccion: tr.dataset.seccion, Ciclo: tr.dataset.ciclo };
+    if (!confirm('¿Deseas eliminar esta asignación?')) return;
+    showLoader();
+    google.script.run
+      .withSuccessHandler(res=>{ hideLoader(); alert(res.message||'Eliminado'); showCargaAcademicaModule(); })
+      .withFailureHandler(()=>{ hideLoader(); alert('Error al eliminar'); })
+      .eliminarCargaAcademicaGS(key);
+  }
+});
+
+// Utilidades
+function fillSelect(id, list, valueKey, labelKey){
+  const el = document.getElementById(id);
+  el.innerHTML = `<option value="">-- Seleccione --</option>` + list.map(i =>
+    `<option value="${i[valueKey]}">${i[labelKey]}</option>`
+  ).join('');
+}
+
+function preselectOrAppend(selectId, value, labelOpt){
+  const sel = document.getElementById(selectId);
+  if (!value){ sel.value=''; return; }
+  const found = Array.from(sel.options).some(o => o.value === value);
+  if (!found){
+    const opt = document.createElement('option');
+    opt.value = value;
+    opt.textContent = labelOpt || value;
+    sel.appendChild(opt);
+  }
+  sel.value = value;
+}
+
+function hideOtherModules(){
+  const section = document.getElementById('module-content');
+  if (section) section.innerHTML = '';
+  document.querySelectorAll('#carga-form-section').forEach(n => n.remove());
+}
+</script>

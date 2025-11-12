@@ -1,0 +1,229 @@
+<script>
+/*
+  logic_assign_students.html
+  Módulo frontend para reasignar estudiantes a secciones.
+  - Función pública: showAssignStudentsModule()
+  - Protecciones: verifica rol (admin/secretaria) en frontend; backend también debe validar.
+  - Llamadas backend usadas: getUserRole(), getSeccionesData(), getStudentsData(usuario), asignarEstudianteASeccion(payload)
+*/
+
+// Mostrar el módulo (router lo invoca)
+function showAssignStudentsModule() {
+  showLoader();
+  document.querySelector('.dashboard-container').style.display = 'none';
+  const moduleContent = document.getElementById('module-content');
+  moduleContent.innerHTML = '';
+
+  // 1) Obtener usuario y validar rol en frontend (backend debe volver a validar)
+  google.script.run.withSuccessHandler(function(user){
+    const role = (user.role || '').toString().toLowerCase();
+    if (!(role === 'administrador' || role === 'secretaria')) {
+      hideLoader();
+      moduleContent.innerHTML = `<div class="module-container"><h3>Acceso denegado</h3><p>No tienes permiso para usar este módulo.</p></div>`;
+      return;
+    }
+
+    // 2) Cargar secciones y estudiantes en paralelo (UX: loader)
+    let secciones = [];
+    let estudiantes = [];
+    let pending = 2;
+    function done() {
+      if (--pending === 0) {
+        hideLoader();
+        renderAssignStudentsTable(estudiantes, secciones);
+      }
+    }
+
+    google.script.run.withSuccessHandler(function(s){
+      secciones = s || [];
+      done();
+    }).withFailureHandler(function(){
+      hideLoader(); alert('Error al cargar secciones'); 
+    }).getSeccionesData();
+
+    google.script.run.withSuccessHandler(function(sts){
+      estudiantes = sts || [];
+      done();
+    }).withFailureHandler(function(){
+      hideLoader(); alert('Error al cargar estudiantes');
+    }).getStudentsData(user);
+
+  }).withFailureHandler(function(){
+    hideLoader();
+    document.getElementById('module-content').innerHTML = `<div class="module-container"><p>Error al obtener usuario.</p></div>`;
+  }).getUserRole();
+}
+
+// Renderiza tabla con select por fila y botón asignar
+// renderAssignStudentsTable actualizado: muestra "Nivel Grupo Subgrupo" en la columna Sección actual
+function renderAssignStudentsTable(students, secciones) {
+  const module = document.getElementById('module-content');
+  // mapa id_seccion -> "Nivel Grupo Subgrupo" para render rápido
+  const sectionLabelMap = {};
+  (secciones || []).forEach(s => {
+    if (s && s.id_seccion != null) {
+      sectionLabelMap[String(s.id_seccion)] = `${s.Nivel || ''} ${s.Grupo || ''} ${s.Subgrupo || ''}`.trim();
+    }
+  });
+
+  // construir opciones comunes (valor = id, texto = etiqueta legible)
+  const optionsHtml = (secciones || []).map(s => `<option value="${s.id_seccion}">${escapeHtml(sectionLabelMap[String(s.id_seccion)] || s.id_seccion)}</option>`).join('');
+
+  module.innerHTML = `
+    <div id="assign-students-module" class="module-container">
+      <h3>Asignar Estudiantes a Secciones</h3>
+      <p class="module-description">Selecciona la nueva sección por estudiante y haz clic en "Asignar".</p>
+      <div style="margin-bottom:10px;">
+        <button id="assign-bulk-btn" class="btn btn-success btn-sm">Asignar seleccionados</button>
+        <button id="refresh-assign-btn" class="btn btn-secondary btn-sm">Refrescar</button>
+        <input id="assign-search" placeholder="Buscar por nombre o cédula" style="margin-left:10px;padding:6px;border-radius:4px;">
+      </div>
+      <div class="table-responsive" style="max-height:60vh; overflow:auto;">
+        <table class="table students-table" id="assign-students-table">
+          <thead>
+            <tr>
+              <th><input type="checkbox" id="select-all-assign"></th>
+              <th>Cédula</th>
+              <th>Nombre</th>
+              <th>Sección actual</th>
+              <th>Nueva sección</th>
+              <th>Acción</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${(students || []).map(s => {
+              const ced = (s['Cédula'] || '').toString().replace(/["']/g,"");
+              const nombre = [s.Nombre, s['Primer apellido'], s['Segundo apellido']].filter(Boolean).join(' ');
+              const actualId = (s['Sección'] || '').toString();
+              const actualTexto = sectionLabelMap[actualId] || actualId || '-';
+              return `
+                <tr data-cedula="${ced}">
+                  <td><input type="checkbox" class="row-select" data-cedula="${ced}"></td>
+                  <td class="td-cedula">${ced}</td>
+                  <td class="td-nombre">${escapeHtml(nombre)}</td>
+                  <td class="td-actual">${escapeHtml(actualTexto)}</td>
+                  <td>
+                    <select class="new-seccion-select" data-cedula="${ced}">
+                      <option value="">-- Seleccionar --</option>
+                      ${optionsHtml}
+                    </select>
+                  </td>
+                  <td>
+                    <button class="btn btn-success btn-sm assign-btn" data-cedula="${ced}">Asignar</button>
+                  </td>
+                </tr>
+              `;
+            }).join('')}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  `;
+
+  // Resto de inicializaciones y listeners (se asume que ya existen en el archivo)
+  document.getElementById('select-all-assign').onchange = function(e){
+    const checked = e.target.checked;
+    document.querySelectorAll('.row-select').forEach(cb => cb.checked = checked);
+  };
+  document.getElementById('refresh-assign-btn').onclick = function(){ showAssignStudentsModule(); };
+  document.getElementById('assign-search').addEventListener('input', function(e){
+    const q = this.value.toLowerCase().trim();
+    document.querySelectorAll('#assign-students-table tbody tr').forEach(tr=>{
+      const ced = tr.querySelector('.td-cedula')?.textContent.toLowerCase() || '';
+      const nom = tr.querySelector('.td-nombre')?.textContent.toLowerCase() || '';
+      tr.style.display = (ced.includes(q) || nom.includes(q)) ? '' : 'none';
+    });
+  });
+  document.addEventListener('click', assignSingleHandler);
+  document.getElementById('assign-bulk-btn').onclick = assignBulkHandler;
+}
+
+// Handler para asignar un estudiante (delegado)
+function assignSingleHandler(e) {
+  const target = e.target;
+  if (!target) return;
+  if (target.classList.contains('assign-btn')) {
+    const cedula = target.dataset.cedula;
+    const select = document.querySelector(`select.new-seccion-select[data-cedula="${cedula}"]`);
+    if (!select) { alert('Control de sección no encontrado'); return; }
+    const nueva = select.value;
+    if (!nueva) { alert('Seleccione una nueva sección'); return; }
+    if (!confirm(`Confirmar traslado del estudiante ${cedula} a la sección ${nueva}?`)) return;
+
+    showLoader();
+    google.script.run
+      .withSuccessHandler(function(res){
+        hideLoader();
+        if (res && res.success) {
+          alert(res.message || 'Sección actualizada');
+          // recarga para mantener consistencia
+          showAssignStudentsModule();
+        } else {
+          alert(res.error || 'Error al asignar sección');
+        }
+      })
+      .withFailureHandler(function(){ hideLoader(); alert('Error en la llamada al servidor'); })
+      .asignarEstudianteASeccion({ cedula: cedula, nuevaSeccion: nueva });
+  }
+}
+
+// Handler para asignar varios seleccionados
+function assignBulkHandler() {
+  const checkedBoxes = Array.from(document.querySelectorAll('.row-select:checked'));
+  if (checkedBoxes.length === 0) { alert('Seleccione al menos un estudiante'); return; }
+
+  // Construir lista de {cedula, nuevaSeccion}
+  const payloads = [];
+  for (const cb of checkedBoxes) {
+    const ced = cb.dataset.cedula;
+    const select = document.querySelector(`select.new-seccion-select[data-cedula="${ced}"]`);
+    if (!select || !select.value) {
+      alert(`Seleccione sección para el estudiante ${ced}`);
+      return;
+    }
+    payloads.push({ cedula: ced, nuevaSeccion: select.value });
+  }
+
+  if (!confirm(`Confirmar traslado de ${payloads.length} estudiante(s)?`)) return;
+  showLoader();
+
+  // Ejecutar secuencial para mejor manejo de errores; si deseas paralelo, cambiar a Promise.all
+  (function next(i){
+    if (i >= payloads.length) {
+      hideLoader();
+      alert('Operación completada');
+      showAssignStudentsModule();
+      return;
+    }
+    const p = payloads[i];
+    google.script.run.withSuccessHandler(function(res){
+      if (!res || !res.success) {
+        hideLoader();
+        alert(`Error en ${p.cedula}: ${res ? res.error : 'Error desconocido'}`);
+        return;
+      }
+      // continuar con siguiente
+      next(i+1);
+    }).withFailureHandler(function(err){
+      hideLoader();
+      alert(`Error en llamada al servidor para ${p.cedula}`);
+    }).asignarEstudianteASeccion({ cedula: p.cedula, nuevaSeccion: p.nuevaSeccion });
+  })(0);
+}
+
+// Util: escapar HTML básico para evitar inyección en nombres
+function escapeHtml(str) {
+  if (!str && str !== 0) return '';
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+// Limpiar event listeners duplicados al remover módulo (evitar memoria)
+// Cuando se cargue otro módulo, es posible que el delegado siga activo; removemos handler al salir.
+// El mecanismo simple: al mostrar otro módulo se reemplaza module-content.innerHTML, y los delegados genéricos permanecen.
+// Si quieres más control, podemos usar namespaced listeners. (pregunta si lo deseas)
+</script>
