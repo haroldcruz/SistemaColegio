@@ -11,7 +11,6 @@
   <?!= include('css_usuarios') ?>
   <?!= include('css_carga_academica') ?>
   <?!= include('css_evaluations') ?>
-  
 </head>
 
 <!-- Bloqueo total: overlay con spinner -->
@@ -36,7 +35,7 @@
       <!-- Botón hamburguesa, visible solo en móviles -->
       <button id="hamburger-btn" class="hamburger-btn">&#9776;</button>
       <div id="sidebar-mobile" class="sidebar hidden">
-        <!-- Aquí va tu menú lateral (móvil) -->
+        <!-- Menú lateral (móvil) -->
       </div>
 
       <!-- NAV: mantener todos los enlaces dentro del <nav> -->
@@ -71,6 +70,12 @@
           <a href="#" class="nav-item evaluations-nav-item" data-target="evaluations">
             <i class="material-icons">note_add</i><span>Evaluaciones</span>
           </a>
+
+          <!-- Acceso directo a Calificar (abre módulo Evaluaciones / Calificar) -->
+          <a href="#" id="sidebar-open-evals" class="nav-item grade-quick-nav">
+            <i class="material-icons">edit</i><span>Calificar</span>
+          </a>
+
           <!-- Nuevo ítem Asistencia (para docentes) -->
           <a href="#" class="nav-item attendance-nav-item" data-target="attendance">
             <i class="material-icons">check_circle</i><span>Asistencia</span>
@@ -103,7 +108,7 @@
     <div class="content-wrapper">
       <div id="content" class="hidden">
         <div class="header-main">
-          <h2>Panel de Control</h2> <!-- será reemplazado para docentes en logic_main -->
+          <h2>Panel de Control</h2>
         </div>
 
         <!-- DASHBOARD -->
@@ -157,6 +162,28 @@
   <?!= include('logic_assign_students') ?>
   <?!= include('logic_evaluations') ?>
   <?!= include('logic_grade') ?>
+
+  <!-- Script: ligar botón "Calificar" en el sidebar a la vista de Evaluaciones / módulo Calificar -->
+  <script>
+    // Añade handler una vez cargado el DOM; llama showEvaluationsModule si existe
+    document.addEventListener('DOMContentLoaded', function () {
+      var btn = document.getElementById('sidebar-open-evals');
+      if (!btn) return;
+      btn.addEventListener('click', function (e) {
+        e.preventDefault();
+        // Preferir abrir la lista de evaluaciones (permite elegir). Si no está cargada, intentar abrir showGradeModule sin id.
+        if (typeof window.showEvaluationsModule === 'function') {
+          showEvaluationsModule();
+        } else if (typeof window.showGradeModule === 'function') {
+          // fallback: abrir módulo de calificar sin id (pedirá selección)
+          showGradeModule();
+        } else {
+          alert('El módulo de evaluaciones/calificar no está cargado. Asegúrate de incluir logic_evaluations y logic_grade.');
+          console.error('showEvaluationsModule / showGradeModule no definidos');
+        }
+      });
+    });
+  </script>
 
   <!-- PapaParse (CSV) -->
   <script src="https://cdn.jsdelivr.net/npm/papaparse@5.3.2/papaparse.min.js"></script>

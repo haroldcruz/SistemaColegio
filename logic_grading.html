@@ -1,0 +1,89 @@
+<script>
+/*
+ Frontend: Módulo de Calificación separado (logic_grading.html).
+ - Expone window.showGradeModule(id_evaluacion).
+ - Llama a getEvaluacionDetails, getStudentsBySection y guardarCalificacionesEvaluacionGS en GAS.
+ - UI: reemplaza #module-content (vista completa) y valida notas 0-100.
+*/
+
+/* showGradeModule: entrada pública */
+function showGradeModule(id_evaluacion) {
+  showLoader();
+  if (!id_evaluacion) { hideLoader(); alert('Falta id de evaluación'); return; }
+
+  // Obtener detalles para saber la sección (y autorización será verificada en backend)
+  google.script.run
+    .withSuccessHandler(function(ev){
+      if (!ev) { hideLoader(); alert('Evaluación no encontrada'); return; }
+      // Obtener estudiantes por sección
+      google.script.run
+        .withSuccessHandler(function(students){
+          hideLoader();
+          if (!students || !students.length) { alert('No hay estudiantes en la sección'); return; }
+          renderGradeView(id_evaluacion, students);
+        })
+        .withFailureHandler(function(err){ hideLoader(); alert('Error cargando estudiantes'); console.error(err); })
+        .getStudentsBySection(ev.id_seccion);
+    })
+    .withFailureHandler(function(err){ hideLoader(); alert('Error cargando evaluación'); console.error(err); })
+    .getEvaluacionDetails(id_evaluacion);
+}
+window.showGradeModule = showGradeModule; // exponer globalmente
+
+/* renderGradeView: genera formulario de calificación */
+function renderGradeView(id_evaluacion, students) {
+  const module = document.getElementById('module-content');
+  module.innerHTML = '';
+  const rows = students.map(s => `
+    <tr data-cedula="${s.Cedula}">
+      <td>${s.Cedula}</td>
+      <td>${s.Nombre}</td>
+      <td><input type="number" class="input-nota" style="width:90px" min="0" max="100" step="0.01"></td>
+      <td><input type="text" class="input-obs"></td>
+    </tr>
+  `).join('');
+  module.innerHTML = `
+    <div id="grade-module" class="module-container">
+      <h3>Calificar Evaluación: ${id_evaluacion}</h3>
+      <div style="margin-bottom:10px;">
+        <button id="save-grades-btn" class="btn btn-success">Guardar calificaciones</button>
+        <button id="cancel-grades-btn" class="btn btn-secondary">Volver</button>
+      </div>
+      <div class="table-responsive">
+        <table class="table">
+          <thead><tr><th>Cédula</th><th>Nombre</th><th>Nota (0-100)</th><th>Observaciones</th></tr></thead>
+          <tbody>${rows}</tbody>
+        </table>
+      </div>
+    </div>
+  `;
+  document.getElementById('cancel-grades-btn').onclick = showEvaluationsModule;
+  document.getElementById('save-grades-btn').onclick = function(){
+    const trs = Array.from(document.querySelectorAll('#grade-module tbody tr'));
+    const payload = trs.map(tr => {
+      const ced = tr.dataset.cedula;
+      const notaEl = tr.querySelector('.input-nota');
+      const obsEl = tr.querySelector('.input-obs');
+      const nota = notaEl && notaEl.value !== '' ? parseFloat(notaEl.value) : null;
+      return { id_evaluacion: id_evaluacion, Cedula: ced, Nota: nota, Observaciones: obsEl ? obsEl.value : '' };
+    }).filter(p => p.Nota !== null); // enviar solo filas con nota ingresada
+
+    if (!payload.length) { alert('Ingrese al menos una nota'); return; }
+
+    // Validar rango antes de enviar
+    for (const p of payload) {
+      if (isNaN(p.Nota) || p.Nota < 0 || p.Nota > 100) { alert('Notas deben estar entre 0 y 100'); return; }
+    }
+
+    showLoader();
+    google.script.run
+      .withSuccessHandler(function(res){
+        hideLoader();
+        if (res && res.success) { alert('Calificaciones guardadas'); showEvaluationsModule(); }
+        else { alert('Error: ' + (res.error || res.message)); console.error(res); }
+      })
+      .withFailureHandler(function(err){ hideLoader(); alert('Error guardando calificaciones'); console.error(err); })
+      .guardarCalificacionesEvaluacionGS(payload);
+  };
+}
+</script>
