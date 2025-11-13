@@ -1,0 +1,85 @@
+<script>
+/*
+ Frontend para calificar una evaluación (bulk)
+ - showGradeModule(id_evaluacion): carga evaluación y estudiantes de la sección
+ - Permite editar notas, guardar bulk (guardarCalificacionesGS) y calcular resumen (calcularResumenFinalGS)
+*/
+function showGradeModule(id_evaluacion) {
+  showLoader();
+  document.querySelector('.dashboard-container').style.display = 'none';
+  const module = document.getElementById('module-content');
+  module.innerHTML = '';
+
+  google.script.run.withSuccessHandler(function(ev){
+    if (!ev) { hideLoader(); module.innerHTML = '<div>Evaluación no encontrada</div>'; return; }
+    // obtener estudiantes de la sección
+    google.script.run.withSuccessHandler(function(students){
+      hideLoader();
+      renderGradeTable(ev, students);
+    }).withFailureHandler(function(){ hideLoader(); alert('Error al cargar estudiantes'); }).getStudentsBySection(ev.id_seccion);
+  }).withFailureHandler(function(){ hideLoader(); alert('Error al cargar evaluación'); }).getEvaluacionDetails(id_evaluacion);
+}
+
+function renderGradeTable(ev, students) {
+  const module = document.getElementById('module-content');
+  const rows = (students || []).map(s => `
+    <tr data-cedula="${s.Cedula}">
+      <td>${s.Cedula}</td>
+      <td>${s.Nombre}</td>
+      <td>${ev.id_seccion}</td>
+      <td>${ev.id_materia}</td>
+      <td>${ev.id_clase || ''}</td>
+      <td>${ev.id_tipo_evaluacion}</td>
+      <td>${ev.Fecha || ''}</td>
+      <td>${ev.TipoEvaluacionLabel || ''}</td>
+      <td>${ev.PorcentajePonderado}</td>
+      <td><input class="nota-input" data-cedula="${s.Cedula}" style="width:80px" type="number" min="0" max="100" step="0.01"></td>
+      <td><input class="obs-input" data-cedula="${s.Cedula}" style="width:200px"></td>
+    </tr>
+  `).join('');
+
+  module.innerHTML = `
+    <div class="module-container">
+      <h3>Calificar: ${ev.id_evaluacion} — ${ev.Descripcion || ''}</h3>
+      <div style="margin-bottom:10px;">
+        <button id="save-grades-btn" class="btn btn-success btn-sm">Guardar calificaciones</button>
+        <button id="calc-summary-btn" class="btn btn-secondary btn-sm">Calcular resumen/Final</button>
+        <button id="back-evals-btn" class="btn btn-secondary btn-sm">Volver</button>
+      </div>
+      <div class="table-responsive">
+        <table class="table students-table">
+          <thead><tr><th>Cédula</th><th>Nombre</th><th>Sección</th><th>Materia</th><th>Clase</th><th>Tipo Eval</th><th>Fecha</th><th>Tipo</th><th>%</th><th>Nota</th><th>Observaciones</th></tr></thead>
+          <tbody>${rows}</tbody>
+        </table>
+      </div>
+    </div>
+  `;
+  document.getElementById('back-evals-btn').onclick = showEvaluationsModule;
+  document.getElementById('save-grades-btn').onclick = function(){
+    const inputs = Array.from(document.querySelectorAll('.nota-input'));
+    const payload = inputs.map(i => {
+      const ced = i.dataset.cedula;
+      const nota = i.value ? Number(i.value).toFixed(2) : '';
+      const obs = (document.querySelector(`.obs-input[data-cedula="${ced}"]`) || {}).value || '';
+      return { id_evaluacion: ev.id_evaluacion, Cedula: ced, Nombre: '', Nota: nota, Observaciones: obs };
+    }).filter(p => p.Nota !== '');
+    if (payload.length === 0) { alert('No hay notas para guardar'); return; }
+    showLoader();
+    google.script.run.withSuccessHandler(function(res){
+      hideLoader();
+      if (res && res.success) { alert('Calificaciones guardadas'); } else { alert('Error: ' + (res.error || res.message)); }
+    }).withFailureHandler(function(err){ hideLoader(); alert('Error: ' + (err.message||err)); }).guardarCalificacionesGS(payload);
+  };
+  document.getElementById('calc-summary-btn').onclick = function(){
+    showLoader();
+    google.script.run.withSuccessHandler(function(res){
+      hideLoader();
+      if (res && res.success) {
+        // mostrar resumen simple
+        const list = res.resumen.map(r => `${r.Cedula} — ${r.Nombre}: ${r.TotalPonderado}`).join('\n');
+        alert('Resumen calculado:\n' + list);
+      } else alert('Error: ' + (res.error || res.message));
+    }).withFailureHandler(function(err){ hideLoader(); alert('Error: '+(err.message||err)); }).calcularResumenFinalGS(ev.id_seccion, ev.id_materia, ev.Ciclo || '');
+  };
+}
+</script>

@@ -1,8 +1,9 @@
-// logic_main.html (router central unificado) - modificado para exponer "assign-students"
 <script>
-// Script principal del dashboard
-// Gestiona la carga inicial, navegación y control de roles
-
+// logic_main.html (router central unificado) - versión fusionada y mantenida completa
+// - He preservado toda la lógica original y añadí:
+//   * casos router: assign-students, evaluations, attendance, comunicaciones, justifications, behavior
+//   * visibilidad de nav-items para rol 'docente'/'profesor' (Evaluaciones, Asistencia, Comunicaciones, Justificaciones, Reporte de Conducta)
+// - No eliminé funcionalidades existentes; solo amplié y documenté brevemente.
 // -------------------------------------------------------------
 // REFERENCIAS A ELEMENTOS DE INTERFAZ
 // -------------------------------------------------------------
@@ -12,7 +13,7 @@ const dashboardContainer = document.querySelector('.dashboard-container');
 const moduleContent = document.getElementById('module-content');
 const navItems = document.querySelectorAll('.nav-item');
 
-// Menú móvil
+// Menú móvil: abrir/cerrar
 document.getElementById('hamburger-btn').onclick = function() {
   document.getElementById('sidebar-mobile').classList.toggle('show');
 };
@@ -98,6 +99,8 @@ function handleNavigationClick(event) {
   if (header) {
     header.textContent = target === 'students' ? 'Alumnos'
       : target === 'assign-students' ? 'Asignar Secciones'
+      : target === 'attendance' ? 'Asistencia'
+      : target === 'evaluations' ? 'Evaluaciones'
       : target.charAt(0).toUpperCase() + target.slice(1).replace('-', ' ');
   }
 
@@ -114,7 +117,7 @@ function handleNavigationClick(event) {
   moduleContent.innerHTML = '';          // ← evita que se vea la tabla anterior
   showLoader();                          // ← muestra loader de inmediato
 
-  // router local
+  // router local: preservando todos los casos previos y añadiendo nuevos
   switch (target) {
     case 'students':
       showStudentsModule();
@@ -126,19 +129,42 @@ function handleNavigationClick(event) {
       showMateriasModule();
       break;
     case 'users':
-      showUsuariosModule();
+      if (typeof showUsuariosModule === 'function') showUsuariosModule();
+      else { hideLoader(); moduleContent.innerHTML = '<div style="padding:12px;">Módulo Usuarios no implementado.</div>'; }
       break;
     case 'carga-academica':
-      showCargaAcademicaModule();
+      if (typeof showCargaAcademicaModule === 'function') showCargaAcademicaModule();
+      else { hideLoader(); moduleContent.innerHTML = '<div style="padding:12px;">Módulo Carga Académica no implementado.</div>'; }
       break;
     case 'assign-students':
-      // Llamada segura al módulo de asignación de estudiantes (frontend)
       if (typeof showAssignStudentsModule === 'function') {
         showAssignStudentsModule();
       } else {
         hideLoader();
         moduleContent.innerHTML = '<div style="padding:12px;color:var(--white-text)">Módulo "Asignar Secciones" no cargado.</div>';
       }
+      break;
+    case 'evaluations':
+      if (typeof showEvaluationsModule === 'function') showEvaluationsModule();
+      else { hideLoader(); moduleContent.innerHTML = '<div style="padding:12px;">Módulo Evaluaciones no implementado.</div>'; }
+      break;
+    case 'attendance':
+      if (typeof showAttendanceModule === 'function') showAttendanceModule();
+      else { hideLoader(); moduleContent.innerHTML = '<div style="padding:12px;">Módulo Asistencia no implementado.</div>'; }
+      break;
+    case 'comunicaciones':
+      if (typeof showComunicacionesModule === 'function') showComunicacionesModule();
+      else { hideLoader(); moduleContent.innerHTML = '<div style="padding:12px;">Módulo Comunicaciones no implementado.</div>'; }
+      break;
+    case 'justifications':
+    case 'justificaciones':
+      // aceptar ambos data-targets por compatibilidad
+      if (typeof showJustificacionesModule === 'function') showJustificacionesModule();
+      else { hideLoader(); moduleContent.innerHTML = '<div style="padding:12px;">Módulo Justificaciones no implementado.</div>'; }
+      break;
+    case 'behavior':
+      if (typeof showBehaviorModule === 'function') showBehaviorModule();
+      else { hideLoader(); moduleContent.innerHTML = '<div style="padding:12px;">Módulo Reporte de Conducta no implementado.</div>'; }
       break;
     default:
       hideLoader();
@@ -148,7 +174,12 @@ function handleNavigationClick(event) {
 
 
 function attachEventListeners() {
-  navItems.forEach(item => item.addEventListener('click', handleNavigationClick));
+  // Evita agregar listeners duplicados si ya fueron añadidos
+  navItems.forEach(item => {
+    // remover listener previo por precaución (no usar anonymous duplicado)
+    item.removeEventListener('click', handleNavigationClick);
+    item.addEventListener('click', handleNavigationClick);
+  });
 }
 
 // -------------------------------------------------------------
@@ -171,7 +202,7 @@ function initializeDashboard(userData) {
     greetingRole.classList.add('loaded');
   }
 
-  // ocultar todos por defecto
+  // Ocultar todos por defecto (mantener compatibilidad)
   document.querySelectorAll('.card').forEach(c => c.style.display = 'none');
   document.querySelectorAll('.sidebar-nav .nav-item').forEach(i => i.style.display = 'none');
 
@@ -183,14 +214,26 @@ function initializeDashboard(userData) {
     case 'administrador':
     case 'secretaria':
       visibleCards = ['users-card', 'students-card', 'subjects-card', 'guardians-card', 'evaluations-card', 'behavior-card', 'sections-card'];
-      // Se añade .assign-students-nav-item para que el enlace sea visible a admin/secretaria
-      visibleNavItems.push('.sections-nav-item', '.students-nav-item', '.subjects-nav-item', '.evaluations-nav-item', '.behavior-nav-item', '.users-nav-item', '.guardians-nav-item', '.communications-nav-item', '.justifications-nav-item', '.assign-students-nav-item');
+      // admin/secretaria ven la mayoría de ítems (incluye asignar)
+      visibleNavItems.push(
+        '.sections-nav-item', '.students-nav-item', '.subjects-nav-item',
+        '.cargaacademica-nav-item', '.evaluations-nav-item', '.behavior-nav-item',
+        '.users-nav-item', '.guardians-nav-item', '.communications-nav-item',
+        '.justifications-nav-item', '.assign-students-nav-item'
+      );
       break;
-    case 'docente':
-    case 'profesor':
-      visibleCards = ['students-card', 'subjects-card', 'evaluations-card', 'behavior-card'];
-      visibleNavItems.push('.students-nav-item', '.subjects-nav-item', '.evaluations-nav-item', '.behavior-nav-item', '.sections-nav-item');
-      break;
+      case 'docente':
+      case 'profesor':
+        // Docentes: no ver Materias ni Estudiantado (solo módulos docentes)
+        visibleCards = ['evaluations-card', 'behavior-card']; // quita students-card y subjects-card
+        visibleNavItems.push(
+          '.evaluations-nav-item', // Evaluaciones
+          '.attendance-nav-item',  // Asistencia
+          '.communications-nav-item', // Comunicaciones
+          '.justifications-nav-item', // Justificaciones
+          '.behavior-nav-item'     // Reportes de conducta
+        );
+        break;
     case 'encargado':
     case 'padre':
       visibleCards = ['students-card', 'evaluations-card', 'behavior-card'];
@@ -200,8 +243,15 @@ function initializeDashboard(userData) {
       return showAccessDenied(userData.role || 'Desconocido', userName);
   }
 
+  // Aplicar visibilidad de tarjetas y nav-items (no borrar lógicas anteriores)
   visibleCards.forEach(cls => document.querySelector('.' + cls)?.style.setProperty('display', 'flex'));
-  visibleNavItems.forEach(cls => document.querySelector(cls)?.style.setProperty('display', 'flex'));
+  visibleNavItems.forEach(sel => document.querySelector(sel)?.style.setProperty('display', 'flex'));
+
+  // Ajuste especial: si es docente cambiar el header principal a saludo más completo
+  const headerH2 = document.querySelector('.header-main h2');
+  if ((userRole === 'docente' || userRole === 'profesor') && headerH2) {
+    headerH2.textContent = `Bienvenido, ${userName} — Rol: ${userData.role} al Sistema de Evaluación Estudiantil`;
+  }
 
   attachEventListeners();
 

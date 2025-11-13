@@ -10,6 +10,8 @@
   <?!= include('css_materias') ?>
   <?!= include('css_usuarios') ?>
   <?!= include('css_carga_academica') ?>
+  <?!= include('css_evaluations') ?>
+  
 </head>
 
 <!-- Bloqueo total: overlay con spinner -->
@@ -34,7 +36,7 @@
       <!-- Botón hamburguesa, visible solo en móviles -->
       <button id="hamburger-btn" class="hamburger-btn">&#9776;</button>
       <div id="sidebar-mobile" class="sidebar hidden">
-        <!-- Aquí va tu menú lateral -->
+        <!-- Aquí va tu menú lateral (móvil) -->
       </div>
 
       <!-- NAV: mantener todos los enlaces dentro del <nav> -->
@@ -43,41 +45,55 @@
           <a href="#" class="nav-item active home-nav-item" data-target="dashboard">
             <i class="material-icons">home</i><span>Inicio</span>
           </a>
+
           <a href="#" class="nav-item sections-nav-item" data-target="sections">
             <i class="material-icons">groups</i><span>Grupos/Secciones</span>
           </a>
+
           <a href="#" class="nav-item cargaacademica-nav-item" data-target="carga-academica">
             <i class="material-icons">badge</i><span>Carga Académica</span>
           </a>
+
           <a href="#" class="nav-item students-nav-item" data-target="students">
             <i class="material-icons">school</i><span>Estudiantado</span>
           </a>
+
           <a href="#" class="nav-item subjects-nav-item" data-target="subjects">
             <i class="material-icons">assignment</i><span>Materias</span>
           </a>
 
-          <!-- CORRECTO: enlace del módulo Asignar Secciones dentro del nav -->
+          <!-- Enlace para Asignar Secciones (admin/secretaria) -->
           <a href="#" class="nav-item assign-students-nav-item" data-target="assign-students">
             <i class="material-icons">group_add</i><span>Asignar Secciones</span>
           </a>
 
+          <!-- OPCIONES PARA DOCENTES: Evaluaciones y Asistencia -->
           <a href="#" class="nav-item evaluations-nav-item" data-target="evaluations">
             <i class="material-icons">note_add</i><span>Evaluaciones</span>
           </a>
+          <!-- Nuevo ítem Asistencia (para docentes) -->
+          <a href="#" class="nav-item attendance-nav-item" data-target="attendance">
+            <i class="material-icons">check_circle</i><span>Asistencia</span>
+          </a>
+
           <a href="#" class="nav-item behavior-nav-item" data-target="behavior">
             <i class="material-icons">report</i><span>Reportes de Conducta</span>
           </a>
-          <a href="#" class="nav-item users-nav-item" data-target="users">
-            <i class="material-icons">person</i><span>Usuarios</span>
-          </a>
-          <a href="#" class="nav-item guardians-nav-item" data-target="carga-academica">
-            <i class="material-icons">content_paste</i><span>Carga Académica</span>
-          </a>
+
           <a href="#" class="nav-item communications-nav-item" data-target="comunicaciones">
             <i class="material-icons">email</i><span>Comunicaciones</span>
           </a>
+
           <a href="#" class="nav-item justifications-nav-item" data-target="justificaciones">
             <i class="material-icons">pending_actions</i><span>Justificaciones</span>
+          </a>
+
+          <a href="#" class="nav-item users-nav-item" data-target="users">
+            <i class="material-icons">person</i><span>Usuarios</span>
+          </a>
+
+          <a href="#" class="nav-item guardians-nav-item" data-target="carga-academica">
+            <i class="material-icons">security</i><span>Encargados</span>
           </a>
         </nav>
       </div>
@@ -87,7 +103,7 @@
     <div class="content-wrapper">
       <div id="content" class="hidden">
         <div class="header-main">
-          <h2>Panel de Control</h2>
+          <h2>Panel de Control</h2> <!-- será reemplazado para docentes en logic_main -->
         </div>
 
         <!-- DASHBOARD -->
@@ -139,6 +155,8 @@
   <?!= include('logic_usuarios') ?>
   <?!= include('logic_carga_academica') ?>
   <?!= include('logic_assign_students') ?>
+  <?!= include('logic_evaluations') ?>
+  <?!= include('logic_grade') ?>
 
   <!-- PapaParse (CSV) -->
   <script src="https://cdn.jsdelivr.net/npm/papaparse@5.3.2/papaparse.min.js"></script>

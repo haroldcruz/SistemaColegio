@@ -1,0 +1,107 @@
+<script>
+/*
+ Frontend mínimo para módulo Evaluaciones
+ - showEvaluationsModule(): lista instrumentos y ofrece crear nuevo.
+ - showCreateEvaluationForm(): formulario para crear (filtrado por materias del docente).
+ - Usa endpoints: getEvaluationsLists, getEvaluacionesParaDocente, crearEvaluacionGS
+*/
+function showEvaluationsModule() {
+  showLoader();
+  document.querySelector('.dashboard-container').style.display = 'none';
+  const module = document.getElementById('module-content');
+  module.innerHTML = '';
+  // obtener listas y evaluaciones en paralelo
+  google.script.run.withSuccessHandler(function(lists){
+    // cargar lista de evaluaciones del docente
+    google.script.run.withSuccessHandler(function(evals){
+      hideLoader();
+      renderEvaluationsView(evals, lists);
+    }).withFailureHandler(function(){ hideLoader(); alert('Error al cargar evaluaciones'); }).getEvaluacionesParaDocente();
+  }).withFailureHandler(function(){ hideLoader(); alert('Error al cargar listas'); }).getEvaluationsLists();
+}
+
+function renderEvaluationsView(evals, lists) {
+  const module = document.getElementById('module-content');
+  const rowsHtml = (evals || []).map(e => `
+    <tr data-id="${e.id_evaluacion}">
+      <td>${e.id_evaluacion}</td>
+      <td>${e.id_materia}</td>
+      <td>${e.id_seccion}</td>
+      <td>${e.TipoEvaluacionLabel || e.id_tipo_evaluacion}</td>
+      <td>${e.PorcentajePonderado}</td>
+      <td>${e.Fecha || ''}</td>
+      <td>${e.Descripcion || ''}</td>
+      <td>
+        <button class="btn btn-success btn-sm open-grade-btn" data-id="${e.id_evaluacion}">Calificar</button>
+      </td>
+    </tr>
+  `).join('');
+
+  module.innerHTML = `
+    <div id="evaluations-module" class="module-container">
+      <h3>Evaluaciones</h3>
+      <div style="margin-bottom:10px;">
+        <button id="create-eval-btn" class="btn btn-success btn-sm">Crear instrumento</button>
+      </div>
+      <div class="table-responsive">
+        <table class="table">
+          <thead><tr><th>ID</th><th>Materia</th><th>Sección</th><th>Tipo</th><th>%</th><th>Fecha</th><th>Descripción</th><th>Acciones</th></tr></thead>
+          <tbody>${rowsHtml || '<tr><td colspan="8">Sin evaluaciones</td></tr>'}</tbody>
+        </table>
+      </div>
+    </div>
+  `;
+
+  // eventos
+  document.getElementById('create-eval-btn').onclick = function(){ showCreateEvaluationForm(lists); };
+  document.querySelectorAll('.open-grade-btn').forEach(b => b.addEventListener('click', function(){ const id=this.dataset.id; showGradeModule(id); }));
+}
+
+function showCreateEvaluationForm(lists) {
+  const module = document.getElementById('module-content');
+  module.innerHTML = ''; // reemplaza vista
+  const materiasOpt = (lists.materiasDocente || []).map(m=>`<option value="${m.id_materia}">${m.id_materia}</option>`).join('');
+  const seccionesOpt = (lists.secciones || []).map(s=>`<option value="${s.id_seccion}">${s.Nivel} ${s.Grupo} ${s.Subgrupo}</option>`).join('');
+  const tiposOpt = (lists.tiposEvaluacion || []).map(t=>`<option value="${t.id}">${t.label}</option>`).join('');
+  module.innerHTML = `
+    <div class="module-container">
+      <h3>Crear Instrumento de Evaluación</h3>
+      <div class="form-row"><label>Materia</label><select id="ev-materia">${materiasOpt}</select></div>
+      <div class="form-row"><label>Sección</label><select id="ev-seccion">${seccionesOpt}</select></div>
+      <div class="form-row"><label>Clase (opcional)</label><input id="ev-clase" placeholder="id_clase"></div>
+      <div class="form-row"><label>Tipo</label><select id="ev-tipo">${tiposOpt}</select></div>
+      <div class="form-row"><label>Fecha</label><input type="date" id="ev-fecha"></div>
+      <div class="form-row"><label>Porcentaje Ponderado</label><input type="number" id="ev-porc" min="0" max="100" step="0.01"></div>
+      <div class="form-row"><label>Descripción</label><textarea id="ev-desc"></textarea></div>
+      <div style="margin-top:12px;">
+        <button id="save-ev-btn" class="btn btn-success">Guardar</button>
+        <button id="cancel-ev-btn" class="btn btn-secondary">Cancelar</button>
+      </div>
+    </div>
+  `;
+  document.getElementById('cancel-ev-btn').onclick = showEvaluationsModule;
+  document.getElementById('save-ev-btn').onclick = function(){
+    const payload = {
+      id_materia: document.getElementById('ev-materia').value,
+      id_seccion: document.getElementById('ev-seccion').value,
+      id_clase: document.getElementById('ev-clase').value,
+      id_tipo_evaluacion: document.getElementById('ev-tipo').value,
+      TipoEvaluacionLabel: document.getElementById('ev-tipo').options[document.getElementById('ev-tipo').selectedIndex].text,
+      Fecha: document.getElementById('ev-fecha').value,
+      PorcentajePonderado: Number(document.getElementById('ev-porc').value),
+      Descripcion: document.getElementById('ev-desc').value,
+      Ciclo: '' // opcional, puede añadirse UI si corresponde
+    };
+    if (!payload.id_materia || !payload.id_seccion || !payload.id_tipo_evaluacion || !payload.PorcentajePonderado) {
+      alert('Complete los campos obligatorios');
+      return;
+    }
+    showLoader();
+    google.script.run.withSuccessHandler(function(res){
+      hideLoader();
+      if (res && res.success) { alert('Evaluación creada'); showEvaluationsModule(); }
+      else { alert('Error: ' + (res.error || res.message)); }
+    }).withFailureHandler(function(err){ hideLoader(); alert('Error: '+(err.message||err)); }).crearEvaluacionGS(payload);
+  };
+}
+</script>

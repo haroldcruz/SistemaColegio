@@ -1,12 +1,14 @@
-// =============================================================
-// BACKEND CARGA ACADÉMICA
-// =============================================================
+// BACKEND CARGA ACADÉMICA (corregido)
+// - Ajuste principal: COLS ahora respeta el orden real de la hoja (incluye id_clase).
+// - Se añadieron validaciones de rol (MVC) en operaciones de escritura (solo admin/secretaria).
+// - Comentarios breves incluidos según petición.
 
 const SHEET_CARGA = 'CargaAcademica';
-const COLS = ['Email','id_materia','id_seccion','TipoAsignacion','Ciclo']; // orden corregido
+// columnas en la hoja CargaAcademica: respetar exactamente el orden de la hoja
+const COLS = ['Email', 'id_materia', 'id_clase', 'id_seccion', 'Ciclo', 'TipoAsignacion'];
 
 // -------------------------------------------------------------
-// Funciones base
+// Helpers de acceso a Spreadsheet
 // -------------------------------------------------------------
 function ss_() { 
   return SpreadsheetApp.openById(SPREADSHEET_ID); 
@@ -19,7 +21,7 @@ function cargaSh_() {
 }
 
 // -------------------------------------------------------------
-// Mapas de referencia
+// Mapas de referencia (usuarios, materias, secciones)
 // -------------------------------------------------------------
 function mapUsuarios_() {
   const sh = ss_().getSheetByName('Usuarios');
@@ -101,54 +103,93 @@ function getCargaAcademicaData() {
   for (let i = 1; i < vals.length; i++) {
     const r = vals[i];
     const row = {};
+    // asigna cada columna según encabezado detectado (respetando COLS)
     COLS.forEach(c => row[c] = r[idx[c]]);
-    row.DocenteNombre = mapU[row.Email] || row.Email || '';
-    row.MateriaNombre = mapM[row.id_materia] || row.id_materia || '';
-    row.SeccionNombre = mapS[row.id_seccion] || row.id_seccion || '';
+    // enriquecimiento para frontend
+    row.DocenteNombre = mapU[(row.Email || '').toString().trim()] || row.Email || '';
+    row.MateriaNombre = mapM[(row.id_materia || '').toString().trim()] || row.id_materia || '';
+    row.SeccionNombre = mapS[(row.id_seccion || '').toString().trim()] || row.id_seccion || '';
     out.push(row);
   }
   return out;
 }
 
 // -------------------------------------------------------------
-// Agregar nueva carga académica
+// Verifica rol (solo admin o secretaria)
+// -------------------------------------------------------------
+function _canManageCarga_() {
+  const u = getUserRole();
+  const r = (u.role || '').toString().toLowerCase();
+  return r === 'administrador' || r === 'secretaria';
+}
+
+// -------------------------------------------------------------
+// Agregar nueva carga académica (protegido)
 // -------------------------------------------------------------
 function agregarCargaAcademicaGS(p) {
-  const sh = cargaSh_();
-  const dup = findRowIndexByKey_(sh, p.Email, p.id_seccion, p.Ciclo);
-  if (dup > 0) return { success: false, message: 'Asignación duplicada' };
-  sh.appendRow(COLS.map(k => p[k] || ''));
-  return { success: true, message: 'Asignación agregada' };
+  try {
+    if (!_canManageCarga_()) return { success: false, error: 'No autorizado' };
+    // Validaciones mínimas
+    if (!p || !p.Email || !p.id_materia || !p.id_seccion || !p.Ciclo) {
+      return { success: false, error: 'Faltan campos obligatorios' };
+    }
+    const sh = cargaSh_();
+    const dup = findRowIndexByKey_(sh, p.Email, p.id_seccion, p.Ciclo);
+    if (dup > 0) return { success: false, success:false, message: 'Asignación duplicada' };
+    // Escribe fila en el orden COLS
+    const row = COLS.map(k => (typeof p[k] !== 'undefined' ? p[k] : ''));
+    sh.appendRow(row);
+    return { success: true, message: 'Asignación agregada' };
+  } catch (e) {
+    Logger.log('agregarCargaAcademicaGS: ' + e.toString());
+    return { success: false, error: e.message || e.toString() };
+  }
 }
 
 // -------------------------------------------------------------
-// Editar una carga académica
+// Editar una carga académica (protegido)
 // -------------------------------------------------------------
 function editarCargaAcademicaGS(p) {
-  const sh = cargaSh_();
-  const k = p._originalKey || {};
-  const idx = findRowIndexByKey_(sh, k.Email, k.id_seccion, k.Ciclo);
-  if (idx <= 0) return { success: false, message: 'No existe el registro original' };
+  try {
+    if (!_canManageCarga_()) return { success: false, error: 'No autorizado' };
+    if (!p || !p._originalKey) return { success: false, error: 'Faltan datos' };
+    const sh = cargaSh_();
+    const k = p._originalKey || {};
+    const idx = findRowIndexByKey_(sh, k.Email, k.id_seccion, k.Ciclo);
+    if (idx <= 0) return { success: false, message: 'No existe el registro original' };
 
-  const movioClave = (p.Email !== k.Email) || (p.id_seccion !== k.id_seccion) || (p.Ciclo !== k.Ciclo);
-  if (movioClave) {
-    const dup = findRowIndexByKey_(sh, p.Email, p.id_seccion, p.Ciclo);
-    if (dup > 0 && dup !== idx) return { success: false, message: 'La nueva clave ya existe' };
+    const movioClave = (p.Email !== k.Email) || (p.id_seccion !== k.id_seccion) || (p.Ciclo !== k.Ciclo);
+    if (movioClave) {
+      const dup = findRowIndexByKey_(sh, p.Email, p.id_seccion, p.Ciclo);
+      if (dup > 0 && dup !== idx) return { success: false, message: 'La nueva clave ya existe' };
+    }
+
+    // Actualiza la fila completa respetando COLS
+    const row = COLS.map(c => (typeof p[c] !== 'undefined' ? p[c] : ''));
+    sh.getRange(idx, 1, 1, COLS.length).setValues([row]);
+    return { success: true, message: 'Asignación actualizada' };
+  } catch (e) {
+    Logger.log('editarCargaAcademicaGS: ' + e.toString());
+    return { success: false, error: e.message || e.toString() };
   }
-
-  sh.getRange(idx, 1, 1, COLS.length).setValues([COLS.map(c => p[c] || '')]);
-  return { success: true, message: 'Asignación actualizada' };
 }
 
 // -------------------------------------------------------------
-// Eliminar una carga académica
+// Eliminar una carga académica (protegido)
 // -------------------------------------------------------------
 function eliminarCargaAcademicaGS(key) {
-  const sh = cargaSh_();
-  const idx = findRowIndexByKey_(sh, key.Email, key.id_seccion, key.Ciclo);
-  if (idx <= 0) return { success: false, message: 'No existe registro' };
-  sh.deleteRow(idx);
-  return { success: true, message: 'Asignación eliminada' };
+  try {
+    if (!_canManageCarga_()) return { success: false, error: 'No autorizado' };
+    if (!key || !key.Email) return { success: false, error: 'Clave inválida' };
+    const sh = cargaSh_();
+    const idx = findRowIndexByKey_(sh, key.Email, key.id_seccion, key.Ciclo);
+    if (idx <= 0) return { success: false, message: 'No existe registro' };
+    sh.deleteRow(idx);
+    return { success: true, message: 'Asignación eliminada' };
+  } catch (e) {
+    Logger.log('eliminarCargaAcademicaGS: ' + e.toString());
+    return { success: false, error: e.message || e.toString() };
+  }
 }
 
 // -------------------------------------------------------------
@@ -160,6 +201,7 @@ function findRowIndexByKey_(sh, email, id_seccion, ciclo) {
   const iEmail = head.indexOf('Email');
   const iSec = head.indexOf('id_seccion');
   const iCiclo = head.indexOf('Ciclo');
+  if (iEmail === -1 || iSec === -1 || iCiclo === -1) return -1;
   for (let i = 1; i < vals.length; i++) {
     const r = vals[i];
     if (

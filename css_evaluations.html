@@ -1,0 +1,145 @@
+<style>
+/* css_evaluations.html
+   Estilos para módulos Evaluaciones y Calificar
+   Usa la paleta global definida en css_main (:root variables).
+   Comentarios breves incluidos.
+*/
+
+/* Contenedor principal del módulo */
+.module-container {
+  background: var(--dark-blue);
+  color: var(--white-text);
+  padding: 20px;
+  border-radius: 10px;
+  box-shadow: 0 6px 18px rgba(0,0,0,0.35);
+  margin: 12px 0;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+/* Encabezado del módulo */
+.module-header, .module-container h3 {
+  color: var(--accent-gold);
+  margin: 0 0 12px 0;
+  font-weight: 600;
+  font-size: 1.25rem;
+  text-align: left;
+}
+
+/* Formularios */
+.form-row {
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 12px;
+}
+.form-row.inline {
+  flex-direction: row;
+  gap: 12px;
+  align-items: center;
+}
+.form-label {
+  color: var(--accent-gold);
+  font-weight: 600;
+  margin-bottom: 6px;
+}
+.form-input, .form-select, .form-textarea {
+  padding: 8px 10px;
+  border-radius: 6px;
+  border: 1px solid rgba(255,255,255,0.12);
+  background: var(--white-text);
+  color: var(--dark-blue);
+  font-size: 0.95rem;
+  outline: none;
+}
+.form-textarea { min-height: 80px; resize: vertical; }
+
+/* Acciones del formulario */
+.form-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 10px;
+  justify-content: flex-start;
+}
+
+/* Botones (coherentes con app) */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 600;
+  border: none;
+}
+.btn-sm { padding: 6px 10px; font-size: 0.9rem; border-radius:6px; }
+.btn-success { background: var(--light-dark-blue); color: var(--white-text); }
+.btn-success:hover { background: var(--dark-blue); box-shadow: 0 6px 12px rgba(0,0,0,0.25); }
+.btn-secondary { background: var(--accent-gold); color: var(--dark-blue); }
+.btn-secondary:hover { filter: brightness(0.95); }
+
+/* Tablas responsivas / estilo específico */
+.table-responsive { width: 100%; overflow:auto; max-height:60vh; }
+.table { width: 100%; border-collapse: collapse; min-width: 700px; }
+.table thead th {
+  background: var(--light-dark-blue);
+  color: var(--accent-gold);
+  padding: 10px 12px;
+  text-align: left;
+  position: sticky;
+  top: 0;
+  z-index: 2;
+}
+.table tbody td {
+  padding: 8px 10px;
+  border-bottom: 1px solid rgba(255,255,255,0.04);
+  color: var(--white-text);
+  vertical-align: middle;
+}
+.table .nota-input, .table .obs-input {
+  width: 100%;
+  padding: 6px 8px;
+  border-radius: 6px;
+  border: 1px solid rgba(255,255,255,0.12);
+  box-sizing: border-box;
+  background: var(--white-text);
+  color: var(--dark-blue);
+}
+
+/* Tablas semánticas */
+.evaluations-table th, .evaluations-table td { font-size: 0.95rem; }
+.students-table th, .students-table td { font-size: 0.95rem; }
+
+/* Estados y placeholders */
+.no-data, .no-data-carga {
+  text-align: center;
+  color: var(--accent-gold);
+  padding: 18px;
+  border-radius: 8px;
+  background: rgba(255,255,255,0.02);
+}
+
+/* Tarjetas resumen pequeñas */
+.card-small {
+  background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(255,255,255,0.04);
+  padding: 10px;
+  border-radius: 8px;
+  color: var(--white-text);
+}
+
+/* Utilidades */
+.hidden { display: none !important; }
+.text-muted { color: rgba(255,255,255,0.65); font-size:0.9rem; }
+
+/* Responsividad */
+@media (max-width: 900px) {
+  .form-row.inline { flex-direction: column; }
+  .table { min-width: 600px; }
+  .module-header { text-align: center; }
+}
+
+@media (max-width: 520px) {
+  .table { min-width: 480px; font-size: 0.9rem; }
+  .btn { padding: 6px 8px; font-size: 0.9rem; }
+}
+</style>
